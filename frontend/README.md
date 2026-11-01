@@ -15,7 +15,7 @@
 
 截图见 `screenshots/layout-acquisition.png` 与 `layout-page-0/2/3/4/5/6.png`。没有新增限帧；实际 FPS 仍由设备、浏览器和点云负载决定，截图测试不能证明不同设备的帧率一致。
 
-Windows 更新运行：仓库根目录 `Update-And-Start.cmd`，只启动用 `Start-From-Git.cmd`。最新布局直接提交 Git，不更新旧 ZIP。
+Windows 更新运行：仓库根目录 `git pull origin main`，然后 `npm run dev`（自动检查依赖）。最新布局直接提交 Git，不更新旧 ZIP。
 
 ## 启动与构建
 

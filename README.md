@@ -6,21 +6,28 @@
 
 源码位于 [frontend/](frontend/)，完整开发与接口说明见 [frontend/README.md](frontend/README.md)。
 
-### 推荐：用 Git 更新并运行（Windows CMD）
+### 用 main 更新并运行（推荐）
 
-先安装 Git for Windows 和 Node.js 24 LTS。首次只需克隆一次：
+安装 Git 和 Node.js 24 LTS，在仓库根目录执行：
 
 ```cmd
-git clone --single-branch --branch codex/weld-vision-frontend https://github.com/Blin921/Welding-Robot-Vision-Intelligence-System.git
-cd Welding-Robot-Vision-Intelligence-System
-Update-And-Start.cmd
+git pull origin main
+npm run dev
 ```
 
-以后先在旧运行窗口按 Ctrl+C 停止，再进入本地仓库执行 `Update-And-Start.cmd`。脚本执行 `git pull --ff-only`，只有首次启动、依赖清单或 Node/平台变化才执行 `npm ci`，然后用开发模式运行最新源码，无需每次生产构建或下载压缩包。打开终端打印的 Local 地址，默认 http://localhost:3000，端口占用时 Next.js 会提示实际地址。更新冲突会停止，不强制覆盖本地修改。
+`npm run dev` 会自动检查并安装 `frontend` 依赖，依赖未变化时跳过安装，随后启动最新源码。打开窗口打印的 Local 地址（默认 http://localhost:3000）。更新前在旧运行窗口按 Ctrl+C 停止服务。
 
-已有此分支的 Git 仓库可先执行 `git pull --ff-only` 获取脚本。旧 ZIP 解压目录没有 `.git`，不能直接拉取更新，请在新目录首次克隆。只启动而不联网更新时执行 `Start-From-Git.cmd`。
+首次没有 Git 仓库时：
 
-首次依赖下载慢，可先执行 `npm config set registry https://registry.npmmirror.com`；恢复官方源：`npm config set registry https://registry.npmjs.org`。后续仅改页面代码时会跳过依赖安装。
+```cmd
+git clone https://github.com/Blin921/Welding-Robot-Vision-Intelligence-System.git
+cd Welding-Robot-Vision-Intelligence-System
+npm run dev
+```
+
+不要在 ZIP 解压目录执行 Git 更新；在含 `.git` 和根目录 `package.json` 的克隆目录执行。首次依赖下载慢可先设置 `npm config set registry https://registry.npmmirror.com`。根目录也支持 `npm run build`、`npm start`。
+
+旧的 `Update-And-Start.cmd` 和 `Start-From-Git.cmd` 仍可用，主流程不再依赖这两个脚本。后续更新直接推送 main。
 
 ### 旧版压缩包（不随 Git 源码更新）
 
@@ -49,4 +56,4 @@ npm run dev
 
 如果已有旧版在运行，请以新版启动窗口打印的 READY 地址为准。
 
-当前排版截图见 `frontend/screenshots/layout-acquisition.png` 及 `layout-page-0/2/3/4/5/6.png`。最新改动请使用上面的 Git CMD 流程运行。
+当前排版截图见 `frontend/screenshots/layout-acquisition.png` 及 `layout-page-0/2/3/4/5/6.png`。最新改动请使用上面的 main 更新流程运行。
