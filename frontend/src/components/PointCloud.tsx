@@ -225,6 +225,8 @@ export default function PointCloud(props: Props) {
       dots.set(seam.id, marker);
     }
     const tool = new THREE.Group();
+    // Enlarge the visual model around the TCP origin; poses and paths stay in mm.
+    tool.scale.setScalar(3);
     const tip = new THREE.Mesh(
       new THREE.ConeGeometry(6, 26, 16),
       new THREE.MeshBasicMaterial({ color: 0xe7ac5c }),
