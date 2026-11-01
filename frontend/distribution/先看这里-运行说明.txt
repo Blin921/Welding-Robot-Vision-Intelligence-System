@@ -1,0 +1,27 @@
+焊缝识别系统：数据采集参考图版 v0.3.0
+
+这是新版数据采集页。默认打开数据采集页，其他页面尚未按本次图片重做。
+
+打开方法：
+1. 完整解压 WeldVision-Acquisition-v3.zip 到一个新文件夹。
+2. 安装 Node.js 24 LTS：https://nodejs.org/
+3. Windows 双击 Start-Windows.bat。
+   或在 CMD 进入包含 launch.cjs 的文件夹后执行：
+   node launch.cjs
+4. 浏览器会自动打开。以窗口打印的 READY 地址为准。
+   保持窗口开启；Ctrl+C 停止。若旧版占用 3000 端口，会自动使用 3001–3010。
+
+本包已含生产构建和运行依赖：直接运行不需要 npm ci、不需要镜像、不需要开发编译。
+只需 Node.js；不要进入 frontend 执行旧版启动命令。
+Linux 可执行 sh start.sh，macOS 可双击 Start-Mac.command。
+生产运行已在 Linux + Node.js 24 验证；没有 Windows/macOS 真机测试环境。
+本页面不用 Next 图片优化等原生扩展；源代码重新构建时会安装本平台依赖。
+
+查看新页面截图：frontend/screenshots/acquisition-v3.png。
+修改源码：frontend/src/components/acquisition。
+修改后需要在 frontend 执行 npm ci、npm run dev；预构建 runtime 不会自动同步源码修改。
+依赖下载慢可仅为本次安装使用：npm ci --registry=https://registry.npmmirror.com
+
+默认示例由用户图片中可见像素重建，并非原始 PCD，不能恢复遮挡结构或真实尺寸。
+上传 PCD 会真正解析 XYZ、颜色和实例编号，可以操作三维视图和测距。
+真实采集需要现有 FastAPI 和 RVC 相机；没有设备时不会伪装采集成功。

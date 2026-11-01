@@ -11,7 +11,7 @@ export default defineConfig([
     "next-env.d.ts",
   ]),
   {
-    files: ["scripts/**/*.cjs"],
+    files: ["scripts/**/*.cjs", "distribution/**/*.cjs"],
     rules: { "@typescript-eslint/no-require-imports": "off" },
   },
 ]);

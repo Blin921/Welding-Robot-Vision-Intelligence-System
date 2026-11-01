@@ -21,7 +21,7 @@ const blankCalibration = (): Calibration => ({
 });
 /** A browser-only fixture adapter. It never opens connections to a camera/controller. */
 export class DemoApi implements WeldingApi {
-  private frameData: Frame[] = [
+  protected frameData: Frame[] = [
     {
       id: "sw2_e30",
       source: "dataset",

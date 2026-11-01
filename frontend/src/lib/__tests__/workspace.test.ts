@@ -10,6 +10,26 @@ const matrix = [
 ];
 afterEach(() => vi.useRealTimers());
 describe("workspace consistency", () => {
+  it("unloads without deleting frames, clears only the workspace and restores the backend list", async () => {
+    const api = new DemoApi(),
+      store = new WorkspaceStore(api, "demo");
+    await store.start();
+    const ids = store.getSnapshot().frames.map((f) => f.id);
+    store.unloadFrame();
+    expect(store.getSnapshot().cloud).toBeNull();
+    expect(store.getSnapshot().frames.map((f) => f.id)).toEqual(ids);
+    await store.selectFrame(ids[0]);
+    await store.removeFramesFromWorkspace(ids);
+    expect(store.getSnapshot().frames).toHaveLength(0);
+    expect(store.getSnapshot().cloud).toBeNull();
+    await store.refreshFrames();
+    expect(store.getSnapshot().frames).toHaveLength(0);
+    expect((await api.frames()).frames).toHaveLength(ids.length);
+    await store.restoreWorkspaceFrames();
+    expect(store.getSnapshot().frames.map((f) => f.id)).toEqual(ids);
+    expect(store.getSnapshot().cloud).not.toBeNull();
+    store.dispose();
+  });
   it("loads selected frame in parallel and reuses cached binary views", async () => {
     const api = new DemoApi(),
       spy = vi.spyOn(api, "view");

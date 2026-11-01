@@ -8,11 +8,11 @@
 
 ### 下载并运行
 
-下载新版 [WeldVision-PDF-v2.zip](deliverables/WeldVision-PDF-v2.zip)，完整解压到新文件夹后：
+下载新版 [WeldVision-Acquisition-v3.zip](deliverables/WeldVision-Acquisition-v3.zip)，完整解压到新文件夹后：
 
 - 安装 [Node.js 24 LTS 或更新版本](https://nodejs.org/)。
 - Windows 双击 `Start-Windows.bat`；macOS 双击 `Start-Mac.command`；Linux 执行 `sh start.sh`。
-- 首次运行自动安装 npm 依赖，服务就绪后打开浏览器。
+- 已包含生产运行依赖；不需要 npm ci 或首次编译。也可在解压目录执行 `node launch.cjs`。
 - 默认端口 3000，被占用时自动使用 3001–3010；以启动窗口的 `READY` 地址为准。
 
 也可直接从源码启动：
@@ -25,8 +25,10 @@ npm run dev
 
 默认使用浏览器演示数据，不需要相机和后端。真实后端与机器人控制器不包含在此交付中。
 
-## PDF 界面对照版 v2
+## 数据采集参考图版 v3
 
-已按界面 PDF 恢复浅色工业风、中文顶栏、原有面板分组和三栏布局；首页保留已确认的两项调整。可以先查看 [新版浅色首页](frontend/screenshots/02-overview-light.png) 和 [新版 AI 识别工作台](frontend/screenshots/09-recognition-light.png)。
+本次重写数据采集页并默认打开。按最新 1680×944 参考图安排顶栏、三栏面板、帧列表、扫描参数、三维工具和任务中心；其余页面尚未按本次图片重写。
 
-如果已有旧版在运行，请以新版启动窗口打印的 READY 地址为准。启动器会在端口占用时自动选择 3001–3010。
+先看 [新版数据采集截图](frontend/screenshots/acquisition-v3.png)。支持真实 PCD 解析/预览/导出、帧管理、点云操作、参数校验、任务互斥/轮询、日志与历史。没有原始 PCD，参考工件是图片可见像素重建示例，不能恢复遮挡结构或真实物理尺寸；真采集需要现有后端及相机。未宣称整页逐像素零差异。
+
+如果已有旧版在运行，请以新版启动窗口打印的 READY 地址为准。

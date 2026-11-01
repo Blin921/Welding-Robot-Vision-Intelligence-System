@@ -51,6 +51,7 @@ import WorkflowControls, {
 import WorkspaceViewport from "../components/WorkspaceViewport";
 import ContextPanels from "../components/ContextPanels";
 import TaskCenter from "../components/TaskCenter";
+import AcquisitionPage from "../components/acquisition/AcquisitionPage";
 import { seamLabel } from "../components/SeamList";
 const navigation = [
   { label: "首页", icon: Box },
@@ -106,7 +107,7 @@ function Workspace({
   onMode: (mode: AppMode) => void;
 }) {
   const { state, store } = useWorkspace();
-  const [tab, setTab] = useState(0),
+  const [tab, setTab] = useState(1),
     [light, setLight] = useState(true),
     [taskOpen, setTaskOpen] = useState(false),
     [dialog, setDialog] = useState<Dialog>(null),
@@ -319,6 +320,8 @@ function Workspace({
       pairCount={effectiveForms.pairs.length}
     />
   );
+  if (tab === 1)
+    return <AcquisitionPage onNavigate={go} onMode={onMode} mode={mode} />;
   return (
     <div className={`app ${light ? "light" : ""}`}>
       <header className="topbar">

@@ -7,8 +7,7 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
-import { HttpApi } from "../lib/api";
-import { DemoApi } from "../lib/demo-api";
+import { AcquisitionHttpApi, AcquisitionDemoApi } from "../lib/acquisition/api";
 import { WorkspaceStore } from "./workspace";
 import type { AppMode } from "../lib/types";
 const Context = createContext<WorkspaceStore | null>(null);
@@ -21,7 +20,10 @@ export function WorkspaceProvider({
 }) {
   const store = useMemo(
     () =>
-      new WorkspaceStore(mode === "demo" ? new DemoApi() : new HttpApi(), mode),
+      new WorkspaceStore(
+        mode === "demo" ? new AcquisitionDemoApi() : new AcquisitionHttpApi(),
+        mode,
+      ),
     [mode],
   );
   useEffect(() => {

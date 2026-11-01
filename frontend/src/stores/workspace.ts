@@ -53,6 +53,7 @@ export class WorkspaceStore {
   private initAbort: AbortController | undefined;
   private version = 0;
   private serial = 0;
+  private excludedFrames = new Set<string>();
   constructor(
     readonly api: WeldingApi,
     mode: AppMode,
@@ -158,10 +159,18 @@ export class WorkspaceStore {
   async refreshFrames(signal?: AbortSignal) {
     const { frames } = await this.api.frames(signal);
     if (signal?.aborted || this.disposed) return;
-    this.patch({ frames });
-    if (!this.state.frame || !frames.some((f) => f.id === this.state.frame)) {
+    const visibleFrames = frames.filter(
+      (frame) => !this.excludedFrames.has(frame.id),
+    );
+    this.patch({ frames: visibleFrames });
+    if (
+      !this.state.frame ||
+      !visibleFrames.some((f) => f.id === this.state.frame)
+    ) {
       const frame =
-        frames.find((f) => f.has_artifacts)?.id ?? frames[0]?.id ?? "";
+        visibleFrames.find((f) => f.has_artifacts)?.id ??
+        visibleFrames[0]?.id ??
+        "";
       if (frame) await this.selectFrame(frame);
       else
         this.patch({
@@ -258,6 +267,49 @@ export class WorkspaceStore {
   selectSeam = (id: number) => {
     if (this.state.seams.some((s) => s.id === id)) this.patch({ selected: id });
   };
+  unloadFrame() {
+    if (this.state.pending) {
+      this.notify("当前操作进行中，请稍后卸载", "warn");
+      return;
+    }
+    this.version++;
+    this.loadAbort?.abort();
+    this.patch({
+      frame: "",
+      cloud: null,
+      seams: [],
+      selected: null,
+      calibration: null,
+      loading: false,
+      loadError: null,
+    });
+  }
+  async removeFramesFromWorkspace(ids: string[]) {
+    if (this.state.activeTask || this.state.pending) {
+      this.notify("任务进行中，请完成后再清理工作区", "warn");
+      return;
+    }
+    ids.forEach((id) => {
+      this.excludedFrames.add(id);
+      this.cloudCache.delete(id);
+    });
+    if (ids.includes(this.state.frame)) this.unloadFrame();
+    const frames = this.state.frames.filter(
+      (f) => !this.excludedFrames.has(f.id),
+    );
+    this.patch({ frames });
+    if (!this.state.frame && frames[0]) await this.selectFrame(frames[0].id);
+    this.notify("已从当前工作区移除，后端文件未删除", "info");
+  }
+  async restoreWorkspaceFrames() {
+    this.excludedFrames.clear();
+    try {
+      await this.refreshFrames();
+      this.notify("帧列表已刷新");
+    } catch (error) {
+      this.fail(error);
+    }
+  }
   async upload(file: File) {
     if (file.size > 300 * 1024 * 1024) {
       this.notify("点云超过 300MB，请缩小后上传", "error");
@@ -276,13 +328,14 @@ export class WorkspaceStore {
     this.patch({ pending: "upload" });
     try {
       const result = await this.api.upload(frame, file);
+      this.excludedFrames.delete(result.id);
       this.cloudCache.delete(result.id);
       this.invalidatePrograms(result.id);
       await this.refreshFrames();
       await this.selectFrame(result.id);
       this.notify(
         this.state.mode === "demo"
-          ? "已加入演示帧列表；演示模式不解析上传内容"
+          ? `已载入点云：${result.id}.pcd`
           : `上传成功：${result.id}`,
       );
     } catch (e) {
