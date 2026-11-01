@@ -39,7 +39,7 @@ async function main() {
     args: ["--no-sandbox", "--enable-unsafe-swiftshader"],
   });
   const page = await browser.newPage({
-    viewport: { width: 1600, height: 1000 },
+    viewport: { width: 1600, height: 900 },
     deviceScaleFactor: 1,
   });
   page.setDefaultTimeout(15000);
@@ -49,6 +49,10 @@ async function main() {
   const status = () => page.getByRole("status");
   await page.goto(baseURL, { waitUntil: "load" });
   await page.locator("canvas").waitFor();
+  await expect(page.locator(".app")).toHaveClass(/light/);
+  await expect(page.locator(".page-heading,.workflow-stepper")).toHaveCount(0);
+  await expect(page.locator(".brand")).toContainText("焊缝识别系统");
+  await page.getByRole("button", { name: "切换深浅主题" }).click();
   await expect(page.locator(".hero .floating-tag")).toHaveCount(0);
   await expect(
     page.locator(".hero-cloud button,.hero-cloud input"),
@@ -66,7 +70,10 @@ async function main() {
   });
   await page.getByRole("button", { name: "切换深浅主题" }).click();
   await nav(1);
-  await page.getByRole("button", { name: "开始采集", exact: true }).click();
+  await page
+    .locator(".left-column")
+    .getByRole("button", { name: "开始采集", exact: true })
+    .click();
   await nav(2);
   await expect(page.locator(".log-list")).toContainText("本机未接相机", {
     timeout: 10000,
@@ -77,6 +84,7 @@ async function main() {
     path: "screenshots/03-recognition-dark.png",
     fullPage: true,
   });
+  await nav(1);
   const upload = page.locator("input[type=file]");
   await upload.setInputFiles({
     name: "local_test.pcd",
@@ -88,6 +96,7 @@ async function main() {
     .getByRole("button", { name: "选择帧 sw2_e30", exact: true })
     .click();
   await page.locator(".main-cloud canvas").waitFor();
+  await nav(2);
   await nav(4);
   await page.locator(".seam-list").focus();
   await page.keyboard.press("ArrowDown");
@@ -139,6 +148,7 @@ async function main() {
   await nav(3);
   await page.getByRole("button", { name: "保存标定", exact: true }).click();
   await expect(status()).toContainText("标定已保存");
+  await page.screenshot({ path: "screenshots/07-calibration-light.png" });
   await nav(5);
   await expect(page.locator(".code-preview")).toHaveCount(0);
   await page
@@ -158,6 +168,7 @@ async function main() {
   await expect(page.getByRole("dialog")).not.toContainText("test-do-not-save");
   await page.getByRole("button", { name: "确认模拟下发", exact: true }).click();
   await expect(status()).toContainText("模拟传输完成");
+  await page.screenshot({ path: "screenshots/08-deployment-light.png" });
   await page.getByRole("button", { name: "预览下发确认" }).click();
   await page.getByRole("button", { name: "确认模拟下发", exact: true }).click();
   await expect(status()).toContainText("已覆盖控制器同名程序");
@@ -191,7 +202,7 @@ async function main() {
   expect(
     await page.locator(".main-cloud").evaluate((el) => el.clientWidth),
   ).toBeGreaterThanOrEqual(600);
-  await page.setViewportSize({ width: 1600, height: 1000 });
+  await page.setViewportSize({ width: 1600, height: 900 });
   // Exercise the real HTTP adapter against a controlled contract fixture, not a running backend.
   let calibrated = false,
     polls = 0;
@@ -396,7 +407,7 @@ async function main() {
     JSON.stringify(
       {
         pageErrors: errors,
-        screenshots: 6,
+        screenshots: 8,
         demoChecks: [
           "homepage decorations removed",
           "five new feature illustrations",

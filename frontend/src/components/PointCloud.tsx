@@ -6,7 +6,7 @@ import { Line2 } from "three/examples/jsm/lines/Line2.js";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
 import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
 import { toDisplay } from "../lib/blob";
-import type { CloudData, Seam, Vec3 } from "../lib/types";
+import type { CloudData, Seam, Vec3, PointPair } from "../lib/types";
 export interface TcpPose {
   position: Vec3;
   wpr: Vec3;
@@ -26,6 +26,9 @@ interface Props {
   interactive?: boolean;
   tcp?: TcpPose | null;
   tcpPath?: Vec3[];
+  interaction?: "orbit" | "pan";
+  zoom?: number;
+  calibrationPairs?: PointPair[];
 }
 interface Controls {
   update: (props: Props) => void;
@@ -78,15 +81,17 @@ export default function PointCloud(props: Props) {
           Math.sin(
             Math.min(fov, 2 * Math.atan(Math.tan(fov / 2) * camera.aspect)) / 2,
           )) *
-        0.92;
+        (interactive ? 0.68 : 0.58);
+      const target = center.clone();
+      target.y -= radius * 0.12;
       camera.position
-        .copy(center)
+        .copy(target)
         .add(
-          new THREE.Vector3(0.64, 0.5, 0.67)
+          new THREE.Vector3(0.62, 0.5, 0.72)
             .normalize()
             .multiplyScalar(distance),
         );
-      orbit.target.copy(center);
+      orbit.target.copy(target);
       camera.near = Math.max(0.1, radius / 10000);
       camera.far = radius * 100;
       camera.updateProjectionMatrix();
@@ -99,6 +104,36 @@ export default function PointCloud(props: Props) {
     const semantic = new THREE.BufferAttribute(cloud.rgb, 3, true),
       instances = new THREE.BufferAttribute(cloud.instanceColors, 3, true);
     geometry.setAttribute("color", semantic);
+    const surfaceShade = new Float32Array(cloud.header.n).fill(1);
+    if (cloud.header.source === "demo")
+      for (let i = 0; i < cloud.header.n; i++) {
+        const id = cloud.instance[i],
+          x = cloud.xyz[i * 3] - cloud.header.center[0],
+          y = -(cloud.xyz[i * 3 + 1] - cloud.header.center[1]),
+          z = cloud.xyz[i * 3 + 2] - cloud.header.center[2];
+        if (id >= 1 && id <= 3) {
+          const dx = x - (id - 2) * 160,
+            dy = y - 12,
+            r = Math.hypot(dx, dy);
+          surfaceShade[i] =
+            r < 46
+              ? 0.07
+              : Math.abs(z) > 309
+                ? 0.6
+                : 0.16 + 0.84 * Math.max(0, (-dx * 0.35 + dy * 0.86) / r);
+        } else if (id >= 4 && id <= 7) {
+          const dx = x - (id - 5.5) * 160,
+            dy = y + 12,
+            r = Math.hypot(dx, dy);
+          surfaceShade[i] =
+            0.18 +
+            0.82 * Math.max(0, (-dx * 0.35 + dy * 0.86) / Math.max(r, 1));
+        } else surfaceShade[i] = id === 0 ? 0.43 : 0.7;
+      }
+    geometry.setAttribute(
+      "surfaceShade",
+      new THREE.BufferAttribute(surfaceShade, 1),
+    );
     const material = new THREE.PointsMaterial({
       size: 2,
       vertexColors: true,
@@ -108,15 +143,24 @@ export default function PointCloud(props: Props) {
     });
     // The protocol RGB bytes are sRGB. Decode in the shader without copying the payload.
     material.onBeforeCompile = (shader) => {
-      shader.fragmentShader = shader.fragmentShader.replace(
-        "#include <color_fragment>",
-        `#include <color_fragment>
-        diffuseColor.rgb = mix(pow((diffuseColor.rgb + vec3(0.055)) / 1.055, vec3(2.4)), diffuseColor.rgb / 12.92, lessThanEqual(diffuseColor.rgb, vec3(0.04045)));
+      shader.vertexShader =
+        "attribute float surfaceShade; varying float vSurfaceShade;\n" +
+        shader.vertexShader.replace(
+          "#include <color_vertex>",
+          "#include <color_vertex>\nvSurfaceShade=surfaceShade;",
+        );
+      shader.fragmentShader =
+        "varying float vSurfaceShade;\n" +
+        shader.fragmentShader.replace(
+          "#include <color_fragment>",
+          `#include <color_fragment>
+       vec2 dotOffset=gl_PointCoord-vec2(0.5);if(dot(dotOffset,dotOffset)>0.25)discard;
+       diffuseColor.rgb=mix(pow((diffuseColor.rgb+vec3(0.055))/1.055,vec3(2.4)),diffuseColor.rgb/12.92,lessThanEqual(diffuseColor.rgb,vec3(0.04045)))*vSurfaceShade;
       `,
-      );
+        );
     };
     root.add(new THREE.Points(geometry, material));
-    const gridSize = Math.ceil((radius * 2.3) / 10) * 10;
+    const gridSize = Math.ceil((radius * 1.8) / 10) * 10;
     const grid = new THREE.GridHelper(
       gridSize,
       gridSize / 10,
@@ -207,9 +251,113 @@ export default function PointCloud(props: Props) {
     travelled.visible = false;
     travelled.renderOrder = 4;
     root.add(travelled);
+    const annotations = new THREE.Group();
+    scene.add(annotations);
+    let previousPairs: PointPair[] | undefined,
+      annotationLight: boolean | undefined;
+    const clearAnnotations = () => {
+      annotations.traverse((object) => {
+        if (object instanceof THREE.Mesh || object instanceof THREE.Line) {
+          object.geometry.dispose();
+          const materials = Array.isArray(object.material)
+            ? object.material
+            : [object.material];
+          materials.forEach((m) => m.dispose());
+        }
+        if (object instanceof THREE.Sprite) {
+          object.material.map?.dispose();
+          object.material.dispose();
+        }
+      });
+      annotations.clear();
+    };
     let lastMode = "语义",
+      lastZoom = 0,
       lastSelected: number | null = null;
     const update = (p: Props) => {
+      if (previousPairs !== p.calibrationPairs || annotationLight !== p.light) {
+        clearAnnotations();
+        previousPairs = p.calibrationPairs;
+        annotationLight = p.light;
+        p.calibrationPairs?.forEach((pair, index) => {
+          if (!pair.cam.every(Number.isFinite)) return;
+          const color = [0xe9ad23, 0x3479e4, 0x28aa60][index % 3],
+            point = new THREE.Vector3(...toDisplay(pair.cam)),
+            top = point.clone().add(new THREE.Vector3(0, 130 + index * 18, 0));
+          const dot = new THREE.Mesh(
+            new THREE.SphereGeometry(5, 10, 10),
+            new THREE.MeshBasicMaterial({ color, depthTest: false }),
+          );
+          dot.position.copy(point);
+          dot.renderOrder = 6;
+          annotations.add(dot);
+          const leader = new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints([point, top]),
+            new THREE.LineDashedMaterial({
+              color,
+              dashSize: 6,
+              gapSize: 3,
+              depthTest: false,
+            }),
+          );
+          leader.computeLineDistances();
+          leader.renderOrder = 6;
+          annotations.add(leader);
+          const canvas = document.createElement("canvas");
+          canvas.width = 512;
+          canvas.height = 140;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.fillStyle = p.light ? "#eaf0f3ee" : "#1e2b35ee";
+            ctx.fillRect(0, 0, 512, 140);
+            ctx.fillStyle = new THREE.Color(color).getStyle();
+            ctx.font = "bold 29px sans-serif";
+            ctx.fillText(`${index + 1}  点对 ${index + 1}`, 12, 39);
+            ctx.fillStyle = p.light ? "#24343f" : "#e1e7e9";
+            ctx.font = "21px monospace";
+            ctx.fillText(
+              `C (${pair.cam.map((v) => v.toFixed(1)).join(", ")})`,
+              12,
+              80,
+            );
+            ctx.fillText(
+              `R (${pair.base.map((v) => v.toFixed(1)).join(", ")})`,
+              12,
+              115,
+            );
+          }
+          const texture = new THREE.CanvasTexture(canvas);
+          texture.colorSpace = THREE.SRGBColorSpace;
+          const label = new THREE.Sprite(
+            new THREE.SpriteMaterial({
+              map: texture,
+              depthTest: false,
+              transparent: true,
+            }),
+          );
+          label.scale.set(190, 52, 1);
+          label.position.copy(top).add(new THREE.Vector3(65, 25, 0));
+          label.renderOrder = 7;
+          annotations.add(label);
+        });
+      }
+
+      orbit.mouseButtons.LEFT =
+        p.interaction === "pan" ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE;
+      const zoom = p.zoom ?? 0;
+      if (zoom !== lastZoom) {
+        const offset = camera.position.clone().sub(orbit.target),
+          distance = Math.max(
+            orbit.minDistance,
+            Math.min(
+              orbit.maxDistance,
+              offset.length() * Math.pow(0.84, zoom - lastZoom),
+            ),
+          );
+        camera.position.copy(orbit.target).add(offset.setLength(distance));
+        lastZoom = zoom;
+      }
+
       if (p.mode !== lastMode) {
         geometry.setAttribute(
           "color",
@@ -219,7 +367,7 @@ export default function PointCloud(props: Props) {
       }
       material.size = p.size;
       grid.visible = p.grid ?? true;
-      grid.material.opacity = p.light ? 0.4 : 0.28;
+      grid.material.opacity = p.light ? 0.12 : 0.2;
       if (lastSelected !== p.selected) {
         for (const [id, line] of lines) {
           const chosen = id === p.selected;
@@ -299,6 +447,7 @@ export default function PointCloud(props: Props) {
       observer.disconnect();
       orbit.dispose();
       renderer.domElement.removeEventListener("webglcontextlost", contextLost);
+      clearAnnotations();
       scene.traverse((object) => {
         if (
           object instanceof THREE.Mesh ||

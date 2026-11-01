@@ -5,7 +5,7 @@ export function demoSeams(): Seam[] {
     const x = i === 3 ? 207 : (i - 1) * 160 + 47;
     const trajectory_mm = Array.from(
       { length: 17 },
-      (_, j) => [x, 4, -285 + j * 35.625] as Vec3,
+      (_, j) => [x + 300, 154, -135 + j * 35.625] as Vec3,
     );
     return {
       id: i + 1,
@@ -33,7 +33,7 @@ export function demoCloud(): ArrayBuffer {
     return (seed - 1) / 2147483646;
   };
   const point = (x: number, y: number, z: number, c: number[], id: number) => {
-    xyz.set([x, -y, z], index * 3);
+    xyz.set([x + 300, 150 - y, z + 150], index * 3);
     rgb.set(c, index * 3);
     inst[index] = id;
     index++;
@@ -41,8 +41,13 @@ export function demoCloud(): ArrayBuffer {
   for (let tube = 0; tube < 3; tube++)
     for (let i = 0; i < 30000; i++) {
       const a = rand() * Math.PI * 2,
-        z = (rand() - 0.5) * 620,
-        r = 48 + rand() * 1.2;
+        z = i >= 28000 ? (rand() > 0.5 ? 310 : -310) : (rand() - 0.5) * 620,
+        r =
+          i < 22000
+            ? 48 + rand() * 1.2
+            : i < 28000
+              ? 44.5 + rand() * 0.5
+              : 44.5 + rand() * 4.7;
       point(
         (tube - 1) * 160 + Math.cos(a) * r,
         Math.sin(a) * r + 12,
@@ -65,14 +70,17 @@ export function demoCloud(): ArrayBuffer {
       );
     }
   for (let plate = 0; plate < 2; plate++)
-    for (let i = 0; i < 20000; i++)
+    for (let i = 0; i < 20000; i++) {
+      const vertical = rand() > 0.72,
+        sign = plate ? 1 : -1;
       point(
-        (rand() - 0.5) * 630,
-        -53 + rand() * 5,
-        (plate ? 180 : -180) + (rand() - 0.5) * 58,
+        sign * (vertical ? 293 : 230 + rand() * 63),
+        vertical ? -53 + rand() * 43 : -53 + rand() * 2,
+        (rand() - 0.5) * 680,
         [180, 50, 180],
         plate + 8,
       );
+    }
   while (index < n)
     point(
       (rand() - 0.5) * 760,
@@ -89,8 +97,8 @@ export function demoCloud(): ArrayBuffer {
     n,
     n_full: 286742,
     source: "demo",
-    center: [0, 0, 0],
-    extent: [-380, -65, -400, 380, 65, 400],
+    center: [300, 150, 150],
+    extent: [-80, 85, -250, 680, 215, 550],
     semantic_counts: {
       background: 30000,
       pipe: 90000,

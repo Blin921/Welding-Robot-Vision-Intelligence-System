@@ -7,7 +7,7 @@ export function Panel({
   children,
   extra,
   className = "",
-  collapsible = false,
+  collapsible = true,
   defaultOpen = true,
 }: {
   title: string;

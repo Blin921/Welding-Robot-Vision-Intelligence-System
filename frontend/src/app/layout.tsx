@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 export const metadata: Metadata = {
-  title: "WELD VISION · 焊缝视觉智能系统",
+  title: "焊缝识别系统 · 机器人视觉工作台",
   description: "焊接机器人视觉智能系统 · 离线交互演示",
 };
 export default function RootLayout({

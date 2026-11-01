@@ -8,7 +8,6 @@ import {
 } from "react";
 import {
   Box,
-  ChevronRight,
   CircleHelp,
   Crosshair,
   Database,
@@ -23,6 +22,7 @@ import {
   Sun,
   TriangleAlert,
   Workflow,
+  UserRound,
   X,
 } from "lucide-react";
 import { WorkspaceProvider, useWorkspace } from "../stores/provider";
@@ -43,6 +43,7 @@ import {
 } from "../lib/validation";
 import { Modal, Notice } from "../components/ui";
 import Overview from "../components/Overview";
+import BrandMark from "../components/BrandMark";
 import WorkflowControls, {
   INITIAL_PAIRS,
   type Forms,
@@ -52,7 +53,7 @@ import ContextPanels from "../components/ContextPanels";
 import TaskCenter from "../components/TaskCenter";
 import { seamLabel } from "../components/SeamList";
 const navigation = [
-  { label: "总览", icon: Box },
+  { label: "首页", icon: Box },
   { label: "数据采集", icon: Database },
   { label: "AI 识别", icon: ScanLine },
   { label: "坐标标定", icon: Crosshair },
@@ -106,7 +107,7 @@ function Workspace({
 }) {
   const { state, store } = useWorkspace();
   const [tab, setTab] = useState(0),
-    [light, setLight] = useState(false),
+    [light, setLight] = useState(true),
     [taskOpen, setTaskOpen] = useState(false),
     [dialog, setDialog] = useState<Dialog>(null),
     [forms, setForms] = useState<Forms>(() => ({
@@ -314,19 +315,16 @@ function Workspace({
       onAction={seamAction}
       onTaskOpen={() => setTaskOpen(true)}
       onNavigate={go}
+      calibrationMode={effectiveForms.calibMode}
+      pairCount={effectiveForms.pairs.length}
     />
   );
   return (
     <div className={`app ${light ? "light" : ""}`}>
       <header className="topbar">
         <button className="brand" onClick={() => go(0)}>
-          <span className="brand-mark">
-            <ScanLine />
-          </span>
-          <span>
-            WELD<span className="brand-accent">VISION</span>
-            <small>焊缝视觉智能系统</small>
-          </span>
+          <BrandMark />
+          <span>焊缝识别系统</span>
         </button>
         <nav aria-label="主要导航">
           {navigation.map((item, i) => (
@@ -341,6 +339,90 @@ function Workspace({
             </button>
           ))}
         </nav>
+        <div className="health" aria-label="系统健康状态">
+          <span
+            title={
+              state.health?.model_ok
+                ? "模型已加载"
+                : (state.health?.model_error ??
+                  state.healthError ??
+                  "等待健康自检")
+            }
+          >
+            <i
+              className={
+                state.health?.model_ok
+                  ? "green"
+                  : state.health
+                    ? "red"
+                    : "yellow"
+              }
+            />
+            模型
+            <span className="sr-only">
+              {" "}
+              ·{" "}
+              {state.health?.model_ok
+                ? "就绪"
+                : state.health
+                  ? "未加载"
+                  : "未知"}
+            </span>
+          </span>
+          <span
+            title={
+              state.health?.cpp_ok
+                ? "C++ 解算器可用"
+                : "解算器未就绪，请先在后端编译 C++ 可执行文件"
+            }
+          >
+            <i
+              className={
+                state.health?.cpp_ok ? "green" : state.health ? "red" : "yellow"
+              }
+            />
+            C++<span className="health-long">解算器</span>
+            <span className="sr-only">
+              {" "}
+              ·{" "}
+              {state.health?.cpp_ok ? "就绪" : state.health ? "未就绪" : "未知"}
+            </span>
+          </span>
+          <span
+            title={
+              calibWarn
+                ? "最大残差超过 1.5mm，请复核"
+                : (calib?.calib_tag ?? "按当前帧独立标定")
+            }
+          >
+            <i
+              className={
+                !calib
+                  ? "yellow"
+                  : calib.uncalibrated
+                    ? "red"
+                    : calibWarn
+                      ? "yellow"
+                      : "green"
+              }
+            />
+            <span className="health-calibration-label">
+              {!calib
+                ? "标定未知"
+                : calib.uncalibrated
+                  ? "当前帧未标定"
+                  : calibWarn
+                    ? "标定需复核"
+                    : "当前帧已标定"}
+            </span>
+          </span>
+          <button
+            onClick={() => setDialog({ kind: "help" })}
+            aria-label="使用说明"
+          >
+            <CircleHelp size={16} />
+          </button>
+        </div>
         <div className="header-tools">
           <button
             className={`demo-tag ${mode === "live" ? "live-mode" : ""}`}
@@ -363,99 +445,11 @@ function Workspace({
           >
             <Settings2 />
           </button>
-          <span className="avatar">OP</span>
+          <span className="avatar" aria-label="操作员">
+            <UserRound size={20} />
+          </span>
         </div>
       </header>
-      <div className="page-heading">
-        <div>
-          <div className="breadcrumb">
-            工作空间 <ChevronRight /> {navigation[tab].label}
-          </div>
-          <h1>
-            {
-              [
-                "视觉引导，让每一道焊缝精准可见",
-                "数据采集与帧管理",
-                "AI 焊缝识别",
-                "相机与机器人坐标标定",
-                "焊缝管理",
-                "程序生成与轨迹预演",
-                "机器人程序下发",
-              ][tab]
-            }
-          </h1>
-        </div>
-        <div className="health" aria-label="系统健康状态">
-          <span
-            title={
-              state.health?.model_ok
-                ? "模型已加载"
-                : (state.health?.model_error ??
-                  state.healthError ??
-                  "等待健康自检")
-            }
-          >
-            <i
-              className={
-                state.health?.model_ok
-                  ? "green"
-                  : state.health
-                    ? "red"
-                    : "yellow"
-              }
-            />
-            模型 ·{" "}
-            {state.health?.model_ok ? "就绪" : state.health ? "未加载" : "未知"}
-          </span>
-          <span
-            title={
-              state.health?.cpp_ok
-                ? "C++ 解算器可用"
-                : "解算器未就绪，请先在后端编译 C++ 可执行文件"
-            }
-          >
-            <i
-              className={
-                state.health?.cpp_ok ? "green" : state.health ? "red" : "yellow"
-              }
-            />
-            C++ ·{" "}
-            {state.health?.cpp_ok ? "就绪" : state.health ? "未就绪" : "未知"}
-          </span>
-          <span
-            title={
-              calibWarn
-                ? "最大残差超过 1.5mm，请复核"
-                : (calib?.calib_tag ?? "按当前帧独立标定")
-            }
-          >
-            <i
-              className={
-                !calib
-                  ? "yellow"
-                  : calib.uncalibrated
-                    ? "red"
-                    : calibWarn
-                      ? "yellow"
-                      : "green"
-              }
-            />
-            {!calib
-              ? "标定未知"
-              : calib.uncalibrated
-                ? "当前帧未标定"
-                : calibWarn
-                  ? "标定需复核"
-                  : "当前帧已标定"}
-          </span>
-          <button
-            onClick={() => setDialog({ kind: "help" })}
-            aria-label="使用说明"
-          >
-            <CircleHelp size={16} />
-          </button>
-        </div>
-      </div>
       {state.healthError && (
         <div className="connection-error" role="alert">
           <TriangleAlert size={16} />
@@ -474,38 +468,7 @@ function Workspace({
         />
       ) : (
         <>
-          <div className="workflow-stepper" aria-label="工作流步骤">
-            {[
-              { label: "帧与识别", tab: 2, ready: Boolean(state.cloud) },
-              { label: "坐标标定", tab: 3, ready: calib?.has_calib },
-              { label: "焊缝选择", tab: 4, ready: state.selected !== null },
-              {
-                label: "程序与预演",
-                tab: 5,
-                ready: Boolean(store.currentProgram()),
-              },
-              {
-                label: "程序下发",
-                tab: 6,
-                ready: Boolean(store.currentPush()),
-              },
-            ].map((step, i) => (
-              <button
-                key={step.label}
-                className={step.tab === tab ? "current" : ""}
-                onClick={() => go(step.tab)}
-              >
-                <span
-                  className={`step-dot ${step.ready ? "ready" : i === 0 && state.activeTask ? "running" : ""}`}
-                >
-                  {step.ready ? "✓" : i + 1}
-                </span>
-                {step.label}
-                {i >= 3 && calib?.uncalibrated && <TriangleAlert size={12} />}
-              </button>
-            ))}
-          </div>
-          <main className={`workspace ${compact ? "compact" : ""}`}>
+          <main className={`workspace page-${tab} ${compact ? "compact" : ""}`}>
             <aside className="left-column" ref={leftColumn}>
               {compact && (
                 <div className="segmented context-tabs">
@@ -547,7 +510,16 @@ function Workspace({
               )}
             </aside>
             <section className="center-column">
-              <WorkspaceViewport tab={tab} light={light} onNavigate={go} />
+              <WorkspaceViewport
+                tab={tab}
+                light={light}
+                onNavigate={go}
+                calibrationPairs={
+                  effectiveForms.calibMode === "pairs"
+                    ? effectiveForms.pairs
+                    : undefined
+                }
+              />
             </section>
             {!compact && (
               <aside className="right-column" ref={rightColumn}>

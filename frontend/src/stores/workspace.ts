@@ -453,6 +453,7 @@ export class WorkspaceStore {
       const status = await this.api.calibration(request.frame);
       const calibration = {
         ...status,
+        ...("matrix" in request ? { matrix: request.matrix } : {}),
         max_dev_mm: result.max_dev_mm,
         mean_dev_mm: result.mean_dev_mm,
       };

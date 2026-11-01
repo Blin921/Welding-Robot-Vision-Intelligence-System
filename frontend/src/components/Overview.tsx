@@ -1,16 +1,14 @@
 "use client";
 import dynamic from "next/dynamic";
 import {
-  Activity,
   ArrowRight,
   Box,
   Crosshair,
   Database,
-  FileCode2,
+  MonitorPlay,
   Play,
   ScanLine,
   Send,
-  ShieldCheck,
   Workflow,
 } from "lucide-react";
 import { useMemo } from "react";
@@ -21,7 +19,6 @@ const Cloud = dynamic(() => import("./PointCloud"), { ssr: false });
 export default function Overview({
   light,
   onNavigate,
-  onHelp,
 }: {
   light: boolean;
   onNavigate: (tab: number) => void;
@@ -33,37 +30,26 @@ export default function Overview({
     <main className="overview">
       <section className="hero">
         <div className="hero-copy">
-          <div className="eyebrow">
-            <span /> ROBOTIC WELDING INTELLIGENCE
-          </div>
-          <h2>
+          <div className="hero-rule" />
+          <h1>
             看见每一道焊缝，
             <br />
-            规划每一步轨迹<span>。</span>
-          </h2>
-          <p>
-            从三维感知到轨迹预演
-            <br />
-            让复杂的焊接作业，成为清晰可控的工作流。
-          </p>
+            规划每一步轨迹
+          </h1>
           <div className="hero-actions">
             <button className="primary" onClick={() => onNavigate(2)}>
-              <Play size={16} fill="currentColor" />
-              进入识别工作台
+              <Play size={17} fill="currentColor" />
+              进入工作台
               <ArrowRight size={16} />
             </button>
-            <button className="secondary" onClick={() => onNavigate(5)}>
-              <Box size={17} />
-              探索轨迹预演
+            <button
+              className="secondary hero-demo"
+              onClick={() => onNavigate(5)}
+            >
+              <MonitorPlay size={19} />
+              离线演示
+              <ArrowRight size={16} />
             </button>
-          </div>
-          <div className="hero-foot">
-            <span>
-              <ShieldCheck size={15} />
-              仅生成与传输文件
-            </span>
-            <b>·</b>
-            <span>不触发机器人运动</span>
           </div>
         </div>
         <div className="hero-cloud" aria-label="首页静态三维展示">
@@ -75,97 +61,94 @@ export default function Overview({
             mode="语义"
             size={1.6}
             reset={0}
-            grid
+            grid={false}
             interactive={false}
           />
-          <div className="hero-scan-label">
-            <span className="live-dot" /> WELDING / 3D PERCEPTION
-          </div>
         </div>
+        <span className="hero-edge edge-top" />
+        <span className="hero-edge edge-bottom" />
       </section>
-      <div className="section-heading">
-        <div>
-          <h2>让工作流，一目了然</h2>
-          <p>五个步骤，连接感知与执行</p>
-        </div>
-        <span className="mono">WORKFLOW / 01 — 05</span>
-      </div>
       <div className="workflow-cards">
         {[
           {
             title: "数据采集与管理",
-            en: "DATA ACQUISITION",
-            desc: "激光感知，构建场景数字起点",
+            desc: "采集点云 · 管理数据 · 质量检查",
             icon: Database,
             tab: 1,
           },
           {
-            title: "AI 焊缝识别",
-            en: "AI RECOGNITION",
-            desc: "语义分割，精准提取焊缝几何",
+            title: "AI焊缝识别",
+            desc: "智能识别 · 分类标注 · 结果可视化",
             icon: ScanLine,
             tab: 2,
           },
           {
             title: "坐标标定",
-            en: "COORDINATE CALIBRATION",
-            desc: "连接相机空间与机器人坐标",
+            desc: "建立坐标系 · 精准定位 · 统一空间",
             icon: Crosshair,
             tab: 3,
           },
           {
-            title: "程序与轨迹预演",
-            en: "PROGRAM & SIMULATION",
-            desc: "可视化轨迹，预览每一步运动",
+            title: "程序生成与轨迹预演",
+            desc: "自动规划 · 轨迹仿真 · 预览验证",
             icon: Workflow,
             tab: 5,
           },
           {
             title: "机器人程序下发",
-            en: "ROBOT DEPLOYMENT",
-            desc: "安全传输，连接控制器工作流",
+            desc: "一键下发 · 文件传输 · 状态反馈",
             icon: Send,
             tab: 6,
           },
         ].map((card, i) => (
           <button
-            key={card.title}
             className="workflow-card"
+            key={card.title}
             onClick={() => onNavigate(card.tab)}
           >
-            <div className="card-top">
-              <span className="feature-icon">
-                <card.icon />
+            <div className="feature-heading">
+              <card.icon />
+              <h2>{card.title}</h2>
+              <span>
+                <ArrowRight size={13} />
               </span>
-              <span className="card-number">0{i + 1}</span>
             </div>
-            <FeatureArt index={i} />
-            <small>{card.en}</small>
-            <h3>
-              {card.title}
-              <ArrowRight size={17} />
-            </h3>
             <p>{card.desc}</p>
+            <div className="feature-image">
+              <FeatureArt index={i} />
+              {i === 1 && (
+                <div className="feature-legend">
+                  <span>
+                    <i style={{ background: "#4682e6" }} />
+                    钢管
+                  </span>
+                  <span>
+                    <i style={{ background: "#32c850" }} />
+                    钢筋
+                  </span>
+                  <span>
+                    <i style={{ background: "#b432b4" }} />
+                    扁钢
+                  </span>
+                  <span>
+                    <i style={{ background: "#efb940" }} />
+                    焊缝
+                  </span>
+                </div>
+              )}
+              {i === 4 && (
+                <div className="feature-transfer-states">
+                  <span>✓ 已下发</span>
+                  <span>✓ 传输完成</span>
+                  <span>✓ 已确认</span>
+                </div>
+              )}
+            </div>
           </button>
         ))}
       </div>
-      <div className="overview-bottom">
-        <div>
-          <span className="status-orb">
-            <Activity size={18} />
-          </span>
-          <div>
-            <strong>让每一步决策，都有迹可循</strong>
-            <p>采集、识别、标定、预演与下发，整合于同一工作空间。</p>
-          </div>
-          <span className="badge">VISION TO ACTION</span>
-        </div>
-        <button onClick={onHelp}>
-          了解系统工作方式 <ArrowRight size={16} />
-        </button>
-      </div>
       <span className="sr-only">
-        <FileCode2 />
+        <Box />
         首页点云为系统功能展示示意
       </span>
     </main>

@@ -2,13 +2,16 @@
 import {
   Activity,
   ArrowDownToLine,
+  ArrowRight,
   Check,
   Code2,
   Copy,
   Crosshair,
+  Eye,
   FileCode2,
   Layers3,
   Play,
+  Send,
   ShieldCheck,
   Terminal,
   TriangleAlert,
@@ -16,16 +19,20 @@ import {
 import { useWorkspace } from "../stores/provider";
 import { Notice, Panel } from "./ui";
 import SeamList, { seamLabel } from "./SeamList";
-const xyz = (v: number[] | undefined) =>
-  v?.map((n) => n.toFixed(1)).join(", ") ?? "—";
+const xyz = (value: number[] | undefined) =>
+  value?.map((n) => n.toFixed(3)).join(", ") ?? "—";
 export default function ContextPanels({
   tab,
   minLength,
   onAction,
   onTaskOpen,
   onNavigate,
+  calibrationMode = "pairs",
+  pairCount = 0,
 }: {
   tab: number;
+  calibrationMode?: "pairs" | "matrix";
+  pairCount?: number;
   minLength: number;
   onAction: (
     action: "view" | "preview" | "program" | "push",
@@ -34,82 +41,188 @@ export default function ContextPanels({
   onTaskOpen: () => void;
   onNavigate: (tab: number) => void;
 }) {
-  const { store, state } = useWorkspace();
-  const program = store.currentProgram(),
+  const { store, state } = useWorkspace(),
+    program = store.currentProgram(),
     seam = state.seams.find((s) => s.id === state.selected),
     calib = state.calibration,
     cloud = state.cloud;
-  return (
-    <>
-      {tab === 3 ? (
-        <>
-          <Panel title="标定状态" icon={<ShieldCheck />}>
-            <div
-              className={`calibration-state ${calib?.has_calib ? "done" : ""}`}
-            >
-              {calib?.has_calib ? <Check /> : <TriangleAlert />}
-              <strong>
-                {calib?.has_calib
-                  ? "标定已保存"
-                  : calib
-                    ? "当前帧未标定"
-                    : "标定状态未知"}
+  const logs = (
+    <Panel
+      title={tab === 4 ? "任务历史" : "任务日志"}
+      icon={<Terminal />}
+      extra={
+        <button className="subtle-button" onClick={onTaskOpen}>
+          全部⌄
+        </button>
+      }
+      className="logs-panel"
+    >
+      <div className="log-list">
+        {state.logs.slice(0, 5).map((log) => (
+          <div className="log" key={log.id}>
+            <i
+              className={
+                log.kind === "error"
+                  ? "red"
+                  : log.kind === "warn"
+                    ? "yellow"
+                    : log.kind === "info"
+                      ? "blue"
+                      : "green"
+              }
+            />
+            <time>{log.time}</time>
+            <span>{log.text}</span>
+          </div>
+        ))}
+        {!state.logs.length && (
+          <div className="log-empty">
+            <Activity size={16} />
+            <span>当前无{tab === 1 ? "采集" : "运行"}任务</span>
+          </div>
+        )}
+      </div>
+    </Panel>
+  );
+  if (tab === 1) {
+    const frame = state.frames.find((f) => f.id === state.frame);
+    return (
+      <>
+        <Panel title="当前帧信息" icon={<FileCode2 />}>
+          <div className="frame-info-grid">
+            {[
+              ["当前帧", frame?.id ?? "未选择"],
+              ["文件格式", "PCD"],
+              ["点云数量", cloud?.header.n.toLocaleString() ?? "—"],
+              ["数据来源", frame?.source ?? "—"],
+              ["坐标系", "相机系"],
+              ["标定状态", calib?.has_calib ? "已标定" : "未标定"],
+            ].map(([label, value]) => (
+              <div key={label}>
+                <small>{label}</small>
+                <strong>{value}</strong>
+              </div>
+            ))}
+          </div>
+        </Panel>
+        <Panel title="采集任务" icon={<Activity />}>
+          <div className="scan-task-progress">
+            <span className={state.activeTask ? "running" : ""} />
+            <small>{state.activeTask ? "任务运行中" : "空闲"}</small>
+          </div>
+          <p className="ready-line">
+            <ShieldCheck size={17} />
+            采集与识别任务互斥
+          </p>
+          <button
+            className="primary wide"
+            disabled={Boolean(state.activeTask || state.pending)}
+            onClick={() => {
+              onNavigate(1);
+              document
+                .querySelector<HTMLButtonElement>(".left-column form .primary")
+                ?.click();
+            }}
+          >
+            <Play size={15} fill="currentColor" />
+            开始采集
+          </button>
+        </Panel>
+        {logs}
+      </>
+    );
+  }
+  if (tab === 3)
+    return (
+      <>
+        <Panel title="标定状态" icon={<ShieldCheck />}>
+          <div
+            className={`calibration-state ${calib?.has_calib ? "done" : ""}`}
+          >
+            {calib?.has_calib ? <Check /> : <TriangleAlert />}
+            <strong>
+              {calib?.has_calib
+                ? "标定已保存"
+                : calib
+                  ? "当前帧未标定"
+                  : "标定状态未知"}
+            </strong>
+          </div>
+          <div className="stats calibration-stats">
+            <div>
+              <small>输入方式</small>
+              <strong className="text-value">
+                {calibrationMode === "pairs" ? "点对" : "矩阵"}
               </strong>
             </div>
-            <div className="stats">
-              <div>
-                <small>最大残差</small>
-                <strong className="smaller">
-                  {calib?.max_dev_mm?.toFixed(2) ?? "—"}
-                  <span>mm</span>
-                </strong>
-              </div>
-              <div>
-                <small>平均残差</small>
-                <strong className="smaller">
-                  {calib?.mean_dev_mm?.toFixed(2) ?? "—"}
-                  <span>mm</span>
-                </strong>
-              </div>
+            <div>
+              <small>点对数量</small>
+              <strong>{calibrationMode === "pairs" ? pairCount : "—"}</strong>
             </div>
-            <div className="calib-tag">
-              calib_tag <code>{calib?.calib_tag ?? "未标定"}</code>
+            <div>
+              <small>最大残差</small>
+              <strong>
+                {calib?.max_dev_mm?.toFixed(2) ?? "—"}
+                <span> mm</span>
+              </strong>
             </div>
-            {(calib?.max_dev_mm ?? 0) > 1.5 && (
-              <Notice warning>
-                最大残差超过 1.5mm，点对配准误差偏大，请复核点对与精度。
-              </Notice>
-            )}
-            {calib?.has_calib && calib.max_dev_mm === undefined && (
-              <Notice>当前接口未提供点对残差，不能据此判断标定精度。</Notice>
-            )}
-          </Panel>
-          <Panel title="坐标与标定约定" icon={<Crosshair />}>
-            <p className="context-description">
-              标定按帧独立保存。点对不少于 3 组；矩阵输入为 4×4
-              齐次矩阵。标定成功后需重新生成程序。
-            </p>
-            <Notice>
-              视图始终使用相机系毫米坐标，并统一显示为 (x, −y, z)。
-            </Notice>
-          </Panel>
-        </>
-      ) : tab === 5 ? (
+            <div>
+              <small>平均残差</small>
+              <strong>
+                {calib?.mean_dev_mm?.toFixed(2) ?? "—"}
+                <span> mm</span>
+              </strong>
+            </div>
+          </div>
+        </Panel>
+        <Panel title="4×4 变换矩阵（相机→基座）" icon={<Layers3 />}>
+          <div className="matrix-placeholder">
+            {Array.from({ length: 16 }, (_, i) => (
+              <span key={i}>{calib?.matrix?.flat()[i]?.toFixed(4) ?? "—"}</span>
+            ))}
+          </div>
+          <p className="hint">
+            {calib?.matrix
+              ? "显示已提交并保存的矩阵。"
+              : "当前接口未返回变换矩阵数值。"}
+          </p>
+        </Panel>
+        <Panel title="标定结果" icon={<Crosshair />}>
+          <dl className="detail-list">
+            <dt>calib_tag</dt>
+            <dd>{calib?.calib_tag ?? "未标定"}</dd>
+            <dt>标定状态</dt>
+            <dd>{calib?.has_calib ? "已保存" : "待标定"}</dd>
+            <dt>当前帧</dt>
+            <dd>{state.frame || "—"}</dd>
+          </dl>
+          <Notice warning>
+            {(calib?.max_dev_mm ?? 0) > 1.5
+              ? "最大残差超过 1.5mm，请复核点对与标定精度。"
+              : "每帧独立标定；最大残差超过 1.5mm 时显示警告。"}
+          </Notice>
+          {state.mode === "demo" && (
+            <p className="hint">示例数据，不代表真实标定精度。</p>
+          )}
+          <button className="primary wide" onClick={() => onNavigate(4)}>
+            下一步
+            <ArrowRight size={16} />
+          </button>
+        </Panel>
+      </>
+    );
+  if (tab === 5)
+    return (
+      <>
         <Panel
           title="程序预览"
           icon={<Code2 />}
-          extra={
-            <span className="badge">
-              {state.mode === "demo" ? "演示文本" : "后端输出"}
-            </span>
-          }
+          extra={<span className="badge">规范提示，不阻断</span>}
         >
-          <div className="code-caption">
-            <span>
-              <i className="yellow" />
-              {program?.data.ls_name ?? "等待生成"}
+          <div className="segmented program-preview-tabs">
+            <span className="active">
+              {state.mode === "demo" ? "示例文本（不可执行）" : "后端程序文本"}
             </span>
-            <span>FANUC LS</span>
           </div>
           {program ? (
             <>
@@ -117,14 +230,14 @@ export default function ContextPanels({
                 <Notice warning>坐标仍是相机系，禁止上机</Notice>
               )}
               {program.data.issues.length > 0 && (
-                <div className="issues">
-                  <strong>规范提示 · advisory，不阻断生成</strong>
+                <details className="issues" open>
+                  <summary>规范提示 · advisory，不阻断生成</summary>
                   <ul>
                     {program.data.issues.map((issue, i) => (
                       <li key={i}>{issue}</li>
                     ))}
                   </ul>
-                </div>
+                </details>
               )}
               <pre className="code-preview" aria-label="LS 程序文本">
                 {program.data.ls_text.split("\n").map((line, i) => (
@@ -143,7 +256,7 @@ export default function ContextPanels({
                       store.notify("程序文本已复制");
                     } catch {
                       store.notify(
-                        "浏览器未允许剪贴板访问，可从文本预览中选择复制",
+                        "浏览器未允许剪贴板访问，可选择文本复制",
                         "error",
                       );
                     }
@@ -163,199 +276,196 @@ export default function ContextPanels({
             </>
           ) : (
             <div className="empty">
-              <FileCode2 size={36} />
-              <p>等待生成程序</p>
-              <small>选择焊缝并填写参数，生成后可查看文本与 TCP 预演。</small>
+              <FileCode2 size={32} />
+              <p>请先生成程序</p>
+              <small>选择焊缝，生成后显示程序文本与预演数据。</small>
             </div>
           )}
-          <Notice>程序选择与启动由操作者在示教器上人工确认。</Notice>
         </Panel>
-      ) : (
-        <>
-          <Panel
-            title={tab === 6 ? "当前帧信息" : "识别结果概览"}
-            icon={<Activity />}
-          >
-            <div className="stats">
+        <Panel title="TCP 坐标位置" icon={<Crosshair />}>
+          <div id="tcp-context">
+            <div className="tcp-cells">
+              {["X (mm)", "Y (mm)", "Z (mm)"].map((label) => (
+                <div key={label}>
+                  <small>{label}</small>
+                  <strong>—</strong>
+                </div>
+              ))}
+            </div>
+            <div className="coordinate-pair">
               <div>
-                <small>焊缝数量</small>
-                <strong>
-                  {state.seams.length.toString().padStart(2, "0")}
-                  <span>条</span>
-                </strong>
+                <strong>相机系坐标</strong>
+                <p>等待程序生成</p>
               </div>
               <div>
-                <small>点云总数</small>
-                <strong className="smaller">
-                  {cloud?.header.n.toLocaleString() ?? "—"}
-                </strong>
+                <strong>基座系坐标</strong>
+                <p>等待程序生成</p>
               </div>
             </div>
-            <div className="metrics">
-              <div>
-                <span>总焊缝长度</span>
-                <strong>
-                  {state.seams
-                    .reduce((sum, s) => sum + s.length_mm, 0)
-                    .toFixed(1)}
-                  <small> mm</small>
-                </strong>
-              </div>
-              <div>
-                <span>实例数量</span>
-                <strong>{cloud?.header.n_instances ?? "—"}</strong>
-              </div>
-              <div>
-                <span>坐标系</span>
-                <span className="pill">相机系</span>
-              </div>
+          </div>
+        </Panel>
+      </>
+    );
+  if (tab === 6)
+    return (
+      <>
+        <Panel title="上下文信息" icon={<ShieldCheck />}>
+          <div className="context-section">
+            <h3>
+              <FileCode2 size={17} />
+              当前帧
+            </h3>
+            <strong className="mono">{state.frame || "未选择"}</strong>
+            <p>
+              来源：
+              {state.frames.find((f) => f.id === state.frame)?.source ?? "—"}
+            </p>
+          </div>
+          <div className="context-section">
+            <h3>
+              <Crosshair size={17} />
+              选中焊缝
+            </h3>
+            <dl className="detail-list">
+              <dt>编号</dt>
+              <dd>{seam ? seamLabel(seam.id) : "未选择"}</dd>
+              <dt>类型</dt>
+              <dd>{seam?.shape ?? "—"}</dd>
+              <dt>拓扑</dt>
+              <dd>{seam?.type ?? "—"}</dd>
+              <dt>路径点数</dt>
+              <dd>{program?.data.waypoints_cam_mm.length ?? "—"}</dd>
+            </dl>
+          </div>
+          <div className="context-section">
+            <h3>
+              <Activity size={17} />
+              任务状态
+            </h3>
+            <div className="steps">
+              {["点云处理", "语义分割", "焊缝识别", "程序生成", "任务下发"].map(
+                (label, i) => (
+                  <div key={label}>
+                    <i
+                      className={
+                        (i < 3 && cloud) ||
+                        (i === 3 && program) ||
+                        (i === 4 && store.currentPush())
+                          ? "green"
+                          : ""
+                      }
+                    />
+                    <span>{label}</span>
+                    <small>
+                      {(i < 3 && cloud) ||
+                      (i === 3 && program) ||
+                      (i === 4 && store.currentPush())
+                        ? "完成"
+                        : "未开始"}
+                    </small>
+                  </div>
+                ),
+              )}
             </div>
-          </Panel>
-          <Panel
-            title={
-              tab === 6
-                ? "任务状态"
-                : tab === 4
-                  ? "焊缝几何详情"
-                  : "焊缝选择与属性"
-            }
-            icon={<Layers3 />}
-            extra={
-              seam ? (
-                <span className="count">{seamLabel(seam.id)}</span>
-              ) : undefined
-            }
-          >
-            {tab === 6 ? (
-              <div className="steps">
-                {["点云载入", "焊缝识别", "程序生成", "文件传输"].map(
-                  (label, i) => (
-                    <div key={label}>
-                      <i
-                        className={
-                          (i < 2 && cloud) ||
-                          (i === 2 && program) ||
-                          (i === 3 && store.currentPush())
-                            ? "green"
-                            : ""
-                        }
-                      />
-                      <span>{label}</span>
-                      <small>
-                        {(i < 2 && cloud) ||
-                        (i === 2 && program) ||
-                        (i === 3 && store.currentPush())
-                          ? "已完成"
-                          : "未开始"}
-                      </small>
-                    </div>
-                  ),
-                )}
-                <Notice warning>
-                  仅传输程序文件。T1 倍率不高于 10%，单段模式，手不离急停。
-                </Notice>
-              </div>
-            ) : tab === 2 ? (
-              <SeamList minLength={minLength} onAction={onAction} />
-            ) : seam ? (
-              <>
-                <div className="detail-thumbnail">
-                  <div className="mini-pipe" />
-                  <div className="mini-seam" />
-                  <span>SEAM / {seamLabel(seam.id)}</span>
-                </div>
-                <div className="detail-title">
-                  <strong>{seam.shape}</strong>
-                  <span className="result-badge">已选择</span>
-                </div>
-                <div className="metrics">
-                  <div>
-                    <span>拓扑类型</span>
-                    <strong>{seam.type}</strong>
-                  </div>
-                  <div>
-                    <span>焊缝长度</span>
-                    <strong>
-                      {seam.length_mm.toFixed(1)} <small>mm</small>
-                    </strong>
-                  </div>
-                  <div>
-                    <span>起点 XYZ</span>
-                    <strong className="coordinate">
-                      {xyz(seam.trajectory_mm[0])}
-                    </strong>
-                  </div>
-                  <div>
-                    <span>终点 XYZ</span>
-                    <strong className="coordinate">
-                      {xyz(seam.trajectory_mm.at(-1))}
-                    </strong>
-                  </div>
-                  <div>
-                    <span>轨迹点数</span>
-                    <strong>{seam.trajectory_mm.length}</strong>
-                  </div>
-                </div>
-                <div className="two-buttons">
-                  <button
-                    className="secondary"
-                    onClick={() => onAction("preview", seam.id)}
-                  >
-                    <Play size={14} />
-                    预演
-                  </button>
-                  <button
-                    className="secondary"
-                    onClick={() => onAction("program", seam.id)}
-                  >
-                    <FileCode2 size={14} />
-                    生成 .LS
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div className="empty">
-                <Layers3 />
-                <p>当前没有选中焊缝</p>
-                <button onClick={() => onNavigate(2)}>前往识别</button>
-              </div>
-            )}
-          </Panel>
-        </>
+          </div>
+          <Notice warning>
+            仅传输程序文件；程序选择与启动须由操作者在示教器上人工确认。
+          </Notice>
+        </Panel>
+      </>
+    );
+  return (
+    <>
+      {tab === 2 && (
+        <Panel title="识别结果" icon={<Activity />}>
+          <div className="stats recognition-stats">
+            <div>
+              <small>焊缝数量</small>
+              <strong>{state.seams.length}</strong>
+            </div>
+            <div>
+              <small>点云总数</small>
+              <strong>{cloud?.header.n.toLocaleString() ?? "—"}</strong>
+            </div>
+            <div>
+              <small>实例数</small>
+              <strong>{cloud?.header.n_instances ?? "—"}</strong>
+            </div>
+          </div>
+        </Panel>
       )}
-      <Panel
-        title="任务日志"
-        icon={<Terminal />}
-        extra={
-          <button className="subtle-button" onClick={onTaskOpen}>
-            查看全部
-          </button>
-        }
-        className="logs-panel"
-      >
-        <div className="log-list">
-          {state.logs.slice(0, 4).map((log) => (
-            <div className="log" key={log.id}>
-              <i
-                className={
-                  log.kind === "error"
-                    ? "red"
-                    : log.kind === "warn"
-                      ? "yellow"
-                      : log.kind === "info"
-                        ? "blue"
-                        : "green"
-                }
-              />
-              <time>{log.time}</time>
-              <span>{log.text}</span>
+      <Panel title={tab === 2 ? "焊缝列表" : "焊缝几何详情"} icon={<Layers3 />}>
+        {tab === 2 ? (
+          <SeamList compact minLength={minLength} onAction={onAction} />
+        ) : seam ? (
+          <>
+            <div className="geometry-seam-heading">
+              <FileCode2 size={21} />
+              <span>
+                编号<strong>{seamLabel(seam.id)}</strong>
+              </span>
             </div>
-          ))}
-          {state.logs.length === 0 && (
-            <p className="hint">暂无操作日志，任务开始后会实时显示。</p>
-          )}
-        </div>
+            <dl className="detail-list seam-geometry">
+              <dt>构件关系</dt>
+              <dd>{seam.shape}</dd>
+              <dt>类型</dt>
+              <dd>{seam.type}</dd>
+              <dt>长度</dt>
+              <dd>{seam.length_mm.toFixed(1)} mm</dd>
+              <dt>坐标系</dt>
+              <dd>相机系</dd>
+            </dl>
+            <div className="endpoint">
+              <Eye size={16} />
+              <div>
+                起点坐标（X, Y, Z）
+                <p className="mono">{xyz(seam.trajectory_mm[0])}</p>
+              </div>
+            </div>
+            <div className="endpoint">
+              <Eye size={16} />
+              <div>
+                终点坐标（X, Y, Z）
+                <p className="mono">{xyz(seam.trajectory_mm.at(-1))}</p>
+              </div>
+            </div>
+            <div className="single-seam-actions">
+              <h3>
+                <Layers3 size={17} />
+                单条焊缝操作
+              </h3>
+              <div>
+                {[
+                  { label: "查看", action: "view", Icon: Eye },
+                  { label: "预演", action: "preview", Icon: Play },
+                  { label: "生成 .LS", action: "program", Icon: FileCode2 },
+                  { label: "下发", action: "push", Icon: Send },
+                ].map((item) => (
+                  <button
+                    key={item.action}
+                    onClick={() =>
+                      onAction(
+                        item.action as "view" | "preview" | "program" | "push",
+                        seam.id,
+                      )
+                    }
+                  >
+                    <item.Icon size={19} />
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="empty">
+            <Layers3 />
+            <p>尚未选择焊缝</p>
+            <button onClick={() => onNavigate(2)}>前往识别</button>
+          </div>
+        )}
       </Panel>
+      {logs}
     </>
   );
 }

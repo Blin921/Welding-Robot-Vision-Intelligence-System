@@ -16,8 +16,10 @@ export function seamLabel(id: number) {
 export default function SeamList({
   minLength,
   onAction,
+  compact = false,
 }: {
   minLength: number;
+  compact?: boolean;
   onAction: (
     action: "view" | "preview" | "program" | "push",
     id: number,
@@ -38,7 +40,7 @@ export default function SeamList({
   );
   return (
     <>
-      <div className="search">
+      <div className={`search ${compact ? "compact-search" : ""}`}>
         <ListFilter size={15} />
         <input
           aria-label="搜索焊缝"
@@ -49,7 +51,7 @@ export default function SeamList({
         <span>{seams.length}</span>
       </div>
       <div
-        className="seam-list"
+        className={`seam-list ${compact ? "compact-seams" : ""}`}
         role="listbox"
         aria-label="焊缝列表"
         tabIndex={0}
@@ -130,7 +132,9 @@ export default function SeamList({
           </small>
         </div>
       )}
-      <p className="hint">↑ / ↓ 切换焊缝 · 最短长度 {minLength} mm</p>
+      <p className={`hint ${compact ? "compact-hint" : ""}`}>
+        ↑ / ↓ 切换焊缝 · 最短长度 {minLength} mm
+      </p>
     </>
   );
 }

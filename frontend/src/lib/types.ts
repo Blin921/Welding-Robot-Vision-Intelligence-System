@@ -54,6 +54,7 @@ export interface SeamResult {
   primitives: unknown[];
 }
 export interface Calibration {
+  matrix?: number[][];
   calib_tag: string | null;
   has_calib: boolean;
   uncalibrated: boolean;

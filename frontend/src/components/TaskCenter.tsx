@@ -37,6 +37,7 @@ export default function TaskCenter({
       >
         <Terminal size={16} />
         <strong>任务中心</strong>
+        <span className="task-fold-label">（{open ? "展开" : "已折叠"}）</span>
         <span className="task-count">{state.history.length}</span>
         <ChevronDown className={open ? "flip" : ""} size={14} />
       </button>
