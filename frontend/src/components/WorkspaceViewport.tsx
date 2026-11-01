@@ -200,24 +200,18 @@ function Viewport({
           ) : (
             <div className="empty">
               <FolderOpen size={40} />
-              <h3>{state.loadError ? "数据加载失败" : tab === 1 ? "等待点云数据" : "等待点云识别结果"}</h3>
+              <h3>{state.loadError ? "数据加载失败" : "等待点云识别结果"}</h3>
               <p>
                 {state.loadError ??
-                  (tab === 1 && !state.frame ? "上传 PCD 文件或完成扫描采集后，在此预览三维点云。" : "当前帧无历史结果，请开始识别或选择有结果的帧。")}
+                  "当前帧无历史结果，请开始识别或选择有结果的帧。"}
               </p>
               <button
                 className="primary"
                 onClick={() =>
-                  state.loadError
-                    ? void store.retry()
-                    : onNavigate(state.frame ? 2 : 1)
+                  state.loadError ? void store.retry() : onNavigate(2)
                 }
               >
-                {state.loadError
-                  ? "重试加载"
-                  : state.frame
-                    ? "前往识别"
-                    : "上传或采集点云"}
+                {state.loadError ? "重试加载" : "前往识别"}
               </button>
             </div>
           )}
@@ -318,10 +312,7 @@ function Viewport({
             )}
           </>
         )}
-        <div className="viewport-status" aria-label="当前三维视图信息">
-          <span>
-            帧 <b>{state.frame || "—"}</b>
-          </span>
+        <div className="viewport-status">
           <span>
             <i className={state.mode === "demo" ? "yellow" : "green"} />
             {state.mode === "demo" ? "模拟点云" : "后端点云"}

@@ -1,5 +1,5 @@
 "use client";
-import { type Dispatch, type SetStateAction } from "react";
+import { useRef, type Dispatch, type SetStateAction } from "react";
 import {
   Crosshair,
   Database,
@@ -18,10 +18,9 @@ import type {
   RecognizeRequest,
   ScanRequest,
 } from "../lib/types";
-import { validateRecognition } from "../lib/validation";
+import { validateRecognition, validateScan } from "../lib/validation";
 import { Busy, Field, Notice, Panel } from "./ui";
 import SeamList from "./SeamList";
-import AcquisitionControls from "./AcquisitionControls";
 export interface Forms {
   scan: ScanRequest;
   recognize: Omit<RecognizeRequest, "frame">;
@@ -45,10 +44,8 @@ export default function WorkflowControls({
   onGenerate,
   onPush,
   onSeamAction,
-  onNavigate,
 }: {
   tab: number;
-  onNavigate: (tab: number) => void;
   forms: Forms;
   setForms: Dispatch<SetStateAction<Forms>>;
   onCalibrate: () => void;
@@ -61,6 +58,7 @@ export default function WorkflowControls({
   ) => void;
 }) {
   const { store, state } = useWorkspace();
+  const upload = useRef<HTMLInputElement>(null);
   const numeric = (
     section: "scan" | "recognize" | "program" | "ftp",
     key: string,
@@ -102,106 +100,255 @@ export default function WorkflowControls({
   const program = store.currentProgram();
   return (
     <>
-      {tab === 1 && (
-        <AcquisitionControls
-          forms={forms}
-          setForms={setForms}
-          onNavigate={onNavigate}
-        />
-      )}
-      {tab === 2 && (
+      {(tab === 1 || tab === 2) && (
         <>
-          <Panel title="帧选择与识别控制" icon={<Database />}>
-            <label className="recognition-frame-select">
-              <Database size={17} />
-              <select
-                aria-label="当前帧"
-                value={state.frame}
-                onChange={(e) => void store.selectFrame(e.target.value)}
-              >
-                {!state.frame && <option value="">请选择帧</option>}
-                {state.frames.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {f.id}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              className="primary wide"
-              disabled={!state.frame || state.loading}
-              onClick={() => void store.selectFrame(state.frame)}
-            >
-              <FileUp size={16} />
-              载入点云
-            </button>
-            {!state.frames.length && (
-              <Notice>
-                暂无帧，请先
-                <button className="text-button" onClick={() => onNavigate(1)}>
-                  上传或采集点云
+          <Panel
+            title={tab === 1 ? "点云数据管理" : "帧选择与识别控制"}
+            icon={<Database />}
+          >
+            {tab === 1 ? (
+              <>
+                <button
+                  className="upload-button"
+                  disabled={pending}
+                  onClick={() => upload.current?.click()}
+                >
+                  <FileUp size={17} />
+                  <Busy busy={state.pending === "upload"}>上传 PCD 文件</Busy>
                 </button>
-                。
-              </Notice>
-            )}
-            <div className="recognition-actions">
-              <label className="switch-row">
-                <span>
-                  复用历史结果<small>后端直读历史产物，不加载模型</small>
-                </span>
                 <input
-                  aria-label="复用历史结果"
-                  type="checkbox"
-                  checked={forms.recognize.reuse_artifacts}
-                  disabled={locked || pending}
-                  onChange={(e) =>
-                    setForms((f) => ({
-                      ...f,
-                      recognize: {
-                        ...f.recognize,
-                        reuse_artifacts: e.target.checked,
-                      },
-                    }))
-                  }
+                  ref={upload}
+                  hidden
+                  type="file"
+                  accept=".pcd"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) void store.upload(file);
+                    e.target.value = "";
+                  }}
                 />
-              </label>
-              <button
-                className="primary wide"
-                disabled={locked || pending || !state.frame}
-                onClick={() => {
-                  const error = validateRecognition(forms.recognize);
+                <p className="hint">支持 .pcd 格式 · 文件上限 300MB</p>
+                <div className="subheading">
+                  帧列表{" "}
+                  <span>{state.frames.length.toString().padStart(2, "0")}</span>
+                </div>
+                <div className="frame-list">
+                  {state.frames.map((frame) => (
+                    <button
+                      aria-label={`选择帧 ${frame.id}`}
+                      aria-pressed={state.frame === frame.id}
+                      className={state.frame === frame.id ? "chosen" : ""}
+                      key={frame.id}
+                      onClick={() => void store.selectFrame(frame.id)}
+                    >
+                      <span className="radio-dot" />
+                      <span>
+                        <strong>{frame.id}</strong>
+                        <small>
+                          {frame.source} <b>·</b>{" "}
+                          {(frame.bytes / 1048576).toFixed(1)} MB
+                        </small>
+                      </span>
+                      {frame.has_artifacts ? (
+                        <span className="result-badge">有结果</span>
+                      ) : (
+                        <span className="muted">待识别</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                {!state.frames.length && (
+                  <Notice>
+                    暂无帧。上传点云或采集第一帧；后端不可用时请检查连接。
+                  </Notice>
+                )}
+              </>
+            ) : (
+              <>
+                <label className="recognition-frame-select">
+                  <Database size={17} />
+                  <select
+                    aria-label="当前帧"
+                    value={state.frame}
+                    onChange={(event) =>
+                      void store.selectFrame(event.target.value)
+                    }
+                  >
+                    {state.frames.map((frame) => (
+                      <option key={frame.id} value={frame.id}>
+                        {frame.id}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  className="primary wide"
+                  disabled={!state.frame || state.loading}
+                  onClick={() => void store.selectFrame(state.frame)}
+                >
+                  <FileUp size={16} />
+                  载入点云
+                </button>
+              </>
+            )}
+            {tab === 2 && (
+              <div className="recognition-actions">
+                <label className="switch-row">
+                  <span>
+                    复用历史结果<small>离线开发 · 无需模型参与</small>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={forms.recognize.reuse_artifacts}
+                    onChange={(e) =>
+                      setForms((f) => ({
+                        ...f,
+                        recognize: {
+                          ...f.recognize,
+                          reuse_artifacts: e.target.checked,
+                        },
+                      }))
+                    }
+                  />
+                </label>
+                <button
+                  className="primary wide"
+                  disabled={locked || pending || !state.frame}
+                  onClick={() => {
+                    const error = validateRecognition(forms.recognize);
+                    if (error) store.notify(error, "error");
+                    else
+                      void store.run("recognize", {
+                        ...forms.recognize,
+                        frame: state.frame,
+                      });
+                  }}
+                >
+                  {!locked && <Play size={15} />}
+                  <Busy busy={state.activeTask?.kind === "recognize"}>
+                    {locked ? "任务进行中" : "开始识别"}
+                  </Busy>
+                </button>
+              </div>
+            )}
+          </Panel>
+          {tab === 1 ? (
+            <Panel title="扫描采集设置" icon={<Settings2 />}>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const error = validateScan(forms.scan);
                   if (error) store.notify(error, "error");
-                  else
-                    void store.run("recognize", {
-                      ...forms.recognize,
-                      frame: state.frame,
-                    });
+                  else void store.run("scan", forms.scan);
                 }}
               >
-                <Play size={16} />
-                <Busy busy={state.activeTask?.kind === "recognize"}>
-                  {locked ? "任务运行中" : "开始识别"}
-                </Busy>
-              </button>
-            </div>
-          </Panel>
-          <Panel title="高级识别参数" icon={<Settings2 />} defaultOpen={false}>
-            {field("recognize", "voxel", "voxel 体素", "mm", 0.001)}
-            {field("recognize", "tile", "tile 块大小", "mm", 0.001)}
-            {field("recognize", "stride", "stride 步长", "mm", 0.001)}
-            {field(
-              "recognize",
-              "smooth_k",
-              "smooth_k 邻域",
-              undefined,
-              1,
-              undefined,
-              1,
-            )}
-            {field("recognize", "smooth_r", "smooth_r 半径", "mm", 0.001)}
-            {field("recognize", "max_gap", "max_gap 间隙", "m", 0.000001)}
-            {field("recognize", "min_len", "最短焊缝长度", "mm", 0)}
-          </Panel>
+                {field("scan", "scan_ms", "扫描时长", "ms", 500, 20000, 1)}
+                {field("scan", "exp_us", "曝光时间", "μs", 10, 5000, 1)}
+                <label className="distance-field">
+                  <span>工作距离 (mm)</span>
+                  <div>
+                    <input
+                      aria-label="最近工作距离"
+                      type="number"
+                      step="any"
+                      value={
+                        Number.isFinite(forms.scan.dist[0])
+                          ? forms.scan.dist[0]
+                          : ""
+                      }
+                      onChange={(e) =>
+                        setForms((f) => ({
+                          ...f,
+                          scan: {
+                            ...f.scan,
+                            dist: [
+                              e.target.value === ""
+                                ? NaN
+                                : Number(e.target.value),
+                              f.scan.dist[1],
+                            ],
+                          },
+                        }))
+                      }
+                    />
+                    <b>–</b>
+                    <input
+                      aria-label="最远工作距离"
+                      type="number"
+                      step="any"
+                      value={
+                        Number.isFinite(forms.scan.dist[1])
+                          ? forms.scan.dist[1]
+                          : ""
+                      }
+                      onChange={(e) =>
+                        setForms((f) => ({
+                          ...f,
+                          scan: {
+                            ...f.scan,
+                            dist: [
+                              f.scan.dist[0],
+                              e.target.value === ""
+                                ? NaN
+                                : Number(e.target.value),
+                            ],
+                          },
+                        }))
+                      }
+                    />
+                  </div>
+                </label>
+                <label className="switch-row">
+                  散点输出 loose
+                  <input
+                    type="checkbox"
+                    checked={forms.scan.loose}
+                    onChange={(e) =>
+                      setForms((f) => ({
+                        ...f,
+                        scan: { ...f.scan, loose: e.target.checked },
+                      }))
+                    }
+                  />
+                </label>
+                {state.mode === "demo" && (
+                  <Notice>
+                    浏览器演示未接相机，可验证采集失败与日志提示。
+                  </Notice>
+                )}
+                <button className="primary wide" disabled={locked || pending}>
+                  <Busy busy={state.activeTask?.kind === "scan"}>
+                    {locked ? "任务进行中" : "开始采集"}
+                  </Busy>
+                </button>
+              </form>
+            </Panel>
+          ) : (
+            <>
+              <Panel
+                title="高级识别参数"
+                icon={<Settings2 />}
+                collapsible
+                defaultOpen={true}
+              >
+                {field("recognize", "voxel", "voxel 体素", "mm", 0.001)}
+                {field("recognize", "tile", "tile 块大小", "mm", 0.001)}
+                {field("recognize", "stride", "stride 步长", "mm", 0.001)}
+                {field(
+                  "recognize",
+                  "smooth_k",
+                  "smooth_k 邻域",
+                  undefined,
+                  1,
+                  undefined,
+                  1,
+                )}
+                {field("recognize", "smooth_r", "smooth_r 半径", "mm", 0.001)}
+                {field("recognize", "max_gap", "max_gap 间隙", "m", 0.000001)}
+                {field("recognize", "min_len", "最短焊缝长度", "mm", 0)}
+              </Panel>
+            </>
+          )}
         </>
       )}
       {tab === 3 && (
@@ -221,7 +368,6 @@ export default function WorkflowControls({
             </button>
           </div>
           <form
-            noValidate
             onSubmit={(e) => {
               e.preventDefault();
               onCalibrate();
@@ -374,7 +520,6 @@ export default function WorkflowControls({
       {tab === 5 && (
         <Panel title="程序与轨迹预演" icon={<FileCode2 />}>
           <form
-            noValidate
             onSubmit={(e) => {
               e.preventDefault();
               onGenerate();
@@ -482,7 +627,7 @@ export default function WorkflowControls({
               {field("program", "max_seg", "途经点最大间距", "mm", 0.001)}
             </details>
             {state.calibration?.uncalibrated && (
-              <div className="notice warning uncalibrated-warning">
+              <div className="notice warning">
                 <TriangleAlert />
                 坐标仍是相机系，禁止上机。
               </div>
@@ -504,7 +649,6 @@ export default function WorkflowControls({
       {tab === 6 && (
         <Panel title="FTP 文件传输" icon={<Send />}>
           <form
-            noValidate
             onSubmit={(e) => {
               e.preventDefault();
               onPush();
@@ -571,3 +715,4 @@ export default function WorkflowControls({
     </>
   );
 }
+
