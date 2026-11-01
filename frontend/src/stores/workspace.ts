@@ -616,13 +616,6 @@ export class WorkspaceStore {
       this.notify("请先生成当前帧、当前焊缝的程序", "warn");
       return;
     }
-    if (program.uncalibrated) {
-      this.notify(
-        "坐标仍是相机系，禁止上机；请先完成标定并重新生成程序",
-        "error",
-      );
-      return;
-    }
     if (this.state.pending) return;
     this.patch({ pending: "push" });
     try {

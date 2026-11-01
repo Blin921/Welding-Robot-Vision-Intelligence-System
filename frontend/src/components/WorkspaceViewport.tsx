@@ -208,10 +208,16 @@ function Viewport({
               <button
                 className="primary"
                 onClick={() =>
-                  state.loadError ? void store.retry() : onNavigate(2)
+                  state.loadError
+                    ? void store.retry()
+                    : onNavigate(state.frame ? 2 : 1)
                 }
               >
-                {state.loadError ? "重试加载" : "前往识别"}
+                {state.loadError
+                  ? "重试加载"
+                  : state.frame
+                    ? "前往识别"
+                    : "上传或采集点云"}
               </button>
             </div>
           )}
@@ -312,7 +318,10 @@ function Viewport({
             )}
           </>
         )}
-        <div className="viewport-status">
+        <div className="viewport-status" aria-label="当前三维视图信息">
+          <span>
+            帧 <b>{state.frame || "—"}</b>
+          </span>
           <span>
             <i className={state.mode === "demo" ? "yellow" : "green"} />
             {state.mode === "demo" ? "模拟点云" : "后端点云"}

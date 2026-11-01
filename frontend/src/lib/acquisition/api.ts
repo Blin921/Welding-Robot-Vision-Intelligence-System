@@ -1,27 +1,8 @@
 import { DemoApi } from "../demo-api";
 import { ApiError, HttpApi } from "../api";
 import { parsePcdFile } from "./parse-file";
-import { demoCloud, demoSeams } from "../demo-data";
-import type { Frame } from "../types";
-export const ACQUISITION_FRAMES: Frame[] = [
-  "dataset",
-  "camera",
-  "upload",
-  "dataset",
-  "camera",
-].map((source, i) => ({
-  id: `frame_${String(i + 1).padStart(3, "0")}`,
-  source: source as Frame["source"],
-  bytes: 12400000 - i * 97000,
-  mtime: 1761984000 - i * 120,
-  has_artifacts: true,
-}));
 export class AcquisitionDemoApi extends DemoApi {
   private previews = new Map<string, ArrayBuffer>();
-  constructor() {
-    super();
-    this.frameData = ACQUISITION_FRAMES.map((frame) => ({ ...frame }));
-  }
   override async upload(frame: string, file: Blob) {
     const buffer = await parsePcdFile(file, frame);
     const result = await super.upload(frame, file);
@@ -31,17 +12,16 @@ export class AcquisitionDemoApi extends DemoApi {
   override async view(frame: string) {
     const preview = this.previews.get(frame);
     if (preview) return preview;
-    if (!this.frameData.some((f) => f.id === frame))
-      throw new ApiError(404, "帧不存在");
-    return demoCloud();
+    return super.view(frame);
   }
   override async seams(frame: string) {
+    if (!this.previews.has(frame)) return super.seams(frame);
     const status = await this.calibration(frame);
     return {
       frame,
       calib_tag: status.calib_tag,
       uncalibrated: status.uncalibrated,
-      seams: this.previews.has(frame) ? [] : demoSeams(),
+      seams: [],
       primitives: [],
     };
   }

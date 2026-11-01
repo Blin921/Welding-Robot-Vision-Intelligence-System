@@ -1,5 +1,11 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import {
   Box,
   CircleHelp,
@@ -34,6 +40,7 @@ import {
   validateFtp,
   validatePairs,
   validateProgram,
+  validateScan,
 } from "../lib/validation";
 import { Modal, Notice } from "../components/ui";
 import Overview from "../components/Overview";
@@ -45,8 +52,7 @@ import WorkflowControls, {
 import WorkspaceViewport from "../components/WorkspaceViewport";
 import ContextPanels from "../components/ContextPanels";
 import TaskCenter from "../components/TaskCenter";
-import AcquisitionPage from "../components/acquisition/AcquisitionPage";
-import PdfStage from "../components/PdfStage";
+import WorkflowSteps from "../components/WorkflowSteps";
 import { seamLabel } from "../components/SeamList";
 const navigation = [
   { label: "首页", icon: Box },
@@ -76,9 +82,17 @@ type Dialog =
     }
   | { kind: "push"; request: PushRequest; name: string }
   | null;
+function subscribeCompact(callback: () => void) {
+  const media = matchMedia("(max-width: 1199px)");
+  media.addEventListener("change", callback);
+  return () => media.removeEventListener("change", callback);
+}
+function compactSnapshot() {
+  return matchMedia("(max-width: 1199px)").matches;
+}
 export default function Page() {
   const [mode, setMode] = useState<AppMode>(
-    process.env.NEXT_PUBLIC_DATA_MODE === "live" ? "live" : "demo",
+    process.env.NEXT_PUBLIC_DATA_MODE === "demo" ? "demo" : "live",
   );
   return (
     <WorkspaceProvider mode={mode}>
@@ -121,7 +135,11 @@ function Workspace({
     leftColumn.current?.scrollTo({ top: 0 });
     rightColumn.current?.scrollTo({ top: 0 });
   }, [tab, compactPanel]);
-  const compact = false,
+  const compact = useSyncExternalStore(
+      subscribeCompact,
+      compactSnapshot,
+      () => false,
+    ),
     closeDialog = useCallback(() => setDialog(null), []);
   // Only non-secret FTP preferences are restored. A password is never persisted.
   useEffect(() => {
@@ -255,10 +273,6 @@ function Workspace({
       store.notify("请先为当前帧、当前焊缝生成程序", "warn");
       return;
     }
-    if (program.uncalibrated) {
-      store.notify("坐标仍是相机系，禁止上机。请先标定并重新生成程序", "error");
-      return;
-    }
     const error = validateFtp(forms.ftp);
     if (error) {
       store.notify(error, "error");
@@ -298,15 +312,18 @@ function Workspace({
       }
       onAction={seamAction}
       onTaskOpen={() => setTaskOpen(true)}
+      onScan={() => {
+        const error = validateScan(forms.scan);
+        if (error) store.notify(error, "error");
+        else void store.run("scan", forms.scan);
+      }}
       onNavigate={go}
       calibrationMode={effectiveForms.calibMode}
       pairCount={effectiveForms.pairs.length}
     />
   );
-  if (tab === 1)
-    return <AcquisitionPage onNavigate={go} onMode={onMode} mode={mode} />;
   return (
-    <PdfStage>
+    <>
       <div className={`app pdf-app ${light ? "light" : ""}`}>
         <header className="topbar">
           <button className="brand" onClick={() => go(0)}>
@@ -453,6 +470,9 @@ function Workspace({
               <RotateCcw size={14} />
               重新连接
             </button>
+            <button onClick={() => setDialog({ kind: "settings" })}>
+              连接设置
+            </button>
           </div>
         )}
         {tab === 0 ? (
@@ -467,6 +487,7 @@ function Workspace({
               className={`workspace page-${tab} ${compact ? "compact" : ""}`}
             >
               <aside className="left-column" ref={leftColumn}>
+                <WorkflowSteps current={tab} onNavigate={go} />
                 {compact && (
                   <div className="segmented context-tabs">
                     <button
@@ -494,6 +515,7 @@ function Workspace({
                       onGenerate={generate}
                       onPush={push}
                       onSeamAction={seamAction}
+                      onNavigate={go}
                     />
                     <div className="sidebar-foot">
                       <ShieldCheck size={15} />
@@ -509,7 +531,7 @@ function Workspace({
               <section className="center-column">
                 <WorkspaceViewport
                   tab={tab}
-                  light={light}
+                  light={false}
                   onNavigate={go}
                   calibrationPairs={
                     effectiveForms.calibMode === "pairs"
@@ -556,14 +578,14 @@ function Workspace({
                 <div className="modal-icon danger">
                   <TriangleAlert />
                 </div>
-                <p>
+                <p className="uncalibrated-warning">
                   当前帧 <b>{dialog.frame}</b> · {seamLabel(dialog.seamId)}
                   <br />
                   坐标仍是相机系，<strong>禁止上机</strong>
                   。确认后仅生成供检查的程序文件。
                 </p>
                 <Notice warning>
-                  生成后仍须完成标定并重新生成，才能下发到控制器。
+                  未标定程序仅供检查；实际使用前须完成标定并重新生成。
                 </Notice>
                 <div className="modal-actions">
                   <button
@@ -639,6 +661,12 @@ function Workspace({
                 <Notice warning>
                   同名程序将被覆盖。只传输文件，不触发电机启动；程序选择与循环启动必须在示教器上人工确认。
                 </Notice>
+                {store.currentProgram()?.uncalibrated && (
+                  <Notice warning>
+                    <strong>坐标仍是相机系，禁止上机。</strong>
+                    此次仅传输文件，使用前必须完成标定并重新生成。
+                  </Notice>
+                )}
                 {mode === "demo" && (
                   <Notice>
                     当前是浏览器模拟，确认后不会建立真实 FTP 连接。
@@ -671,7 +699,7 @@ function Workspace({
               <>
                 <p>
                   当前模式：
-                  {mode === "demo" ? "浏览器离线演示" : "FastAPI 后端接口"}
+                  {mode === "demo" ? "浏览器自测夹具" : "FastAPI 后端接口"}
                   。切换模式将开启新的前端会话，保留非敏感 FTP 连接设置。
                 </p>
                 <div className="mode-options">
@@ -681,7 +709,7 @@ function Workspace({
                     onClick={() => onMode("demo")}
                   >
                     <Box />
-                    <strong>离线演示</strong>
+                    <strong>浏览器自测</strong>
                     <small>模拟接口、固定点云；不连接设备</small>
                   </button>
                   <button
@@ -690,7 +718,7 @@ function Workspace({
                     onClick={() => onMode("live")}
                   >
                     <Radio />
-                    <strong>后端模式</strong>
+                    <strong>后端模式（含离线复用）</strong>
                     <small>同源 /api，连接既有 FastAPI</small>
                   </button>
                 </div>
@@ -734,6 +762,6 @@ function Workspace({
           </Modal>
         )}
       </div>
-    </PdfStage>
+    </>
   );
 }

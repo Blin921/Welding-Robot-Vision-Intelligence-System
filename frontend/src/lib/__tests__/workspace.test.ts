@@ -1,7 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { WorkspaceStore } from "../../stores/workspace";
 import { DemoApi } from "../demo-api";
-import { DEFAULT_PROGRAM, DEFAULT_RECOGNIZE, DEFAULT_SCAN } from "../types";
+import {
+  DEFAULT_FTP,
+  DEFAULT_PROGRAM,
+  DEFAULT_RECOGNIZE,
+  DEFAULT_SCAN,
+} from "../types";
 const matrix = [
   [1, 0, 0, 0],
   [0, 1, 0, 0],
@@ -10,6 +15,37 @@ const matrix = [
 ];
 afterEach(() => vi.useRealTimers());
 describe("workspace consistency", () => {
+  it("blocks oversize/empty/non-PCD files before issuing upload requests", async () => {
+    const api = new DemoApi(),
+      upload = vi.spyOn(api, "upload"),
+      store = new WorkspaceStore(api, "demo");
+    for (const file of [
+      { name: "large.pcd", size: 300 * 1024 * 1024 + 1 },
+      { name: "empty.pcd", size: 0 },
+      { name: "wrong.txt", size: 20 },
+    ])
+      await store.upload(file as File);
+    expect(upload).not.toHaveBeenCalled();
+    expect(store.getSnapshot().logs).toHaveLength(3);
+    store.dispose();
+  });
+  it("permits confirmed file-only transfer of an uncalibrated inspection program without starting motion", async () => {
+    const api = new DemoApi(),
+      push = vi.spyOn(api, "push"),
+      store = new WorkspaceStore(api, "demo");
+    await store.start();
+    await store.generate(DEFAULT_PROGRAM);
+    expect(store.currentProgram()?.uncalibrated).toBe(true);
+    await store.push({
+      ...DEFAULT_FTP,
+      host: "fixture",
+      frame: "sw2_e30",
+      seam_id: 1,
+    });
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(store.currentPush()?.bytes).toBeGreaterThan(0);
+    store.dispose();
+  });
   it("unloads without deleting frames, clears only the workspace and restores the backend list", async () => {
     const api = new DemoApi(),
       store = new WorkspaceStore(api, "demo");

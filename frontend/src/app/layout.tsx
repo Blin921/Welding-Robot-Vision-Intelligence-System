@@ -3,7 +3,7 @@ import "./globals.css";
 import "./pdf-layout.css";
 export const metadata: Metadata = {
   title: "焊缝识别系统 · 机器人视觉工作台",
-  description: "焊接机器人视觉智能系统 · 离线交互演示",
+  description: "焊缝识别、坐标标定与程序预演工作台",
 };
 export default function RootLayout({
   children,

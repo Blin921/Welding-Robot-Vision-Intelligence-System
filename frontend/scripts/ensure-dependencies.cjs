@@ -7,11 +7,29 @@ if (Number(process.versions.node.split(".")[0]) < 24) {
   console.error("Please install Node.js 24 LTS or newer: https://nodejs.org/");
   process.exit(1);
 }
+const manifestBytes = fs.readFileSync(path.join(root, "package.json"));
+const lockBytes = fs.readFileSync(path.join(root, "package-lock.json"));
+const manifest = JSON.parse(manifestBytes);
+const platform = `${process.platform}/${process.arch}/${process.versions.modules}`;
+// Script/README changes do not reinstall dependencies; accept and migrate the previous marker.
+const legacyDigest = crypto
+  .createHash("sha256")
+  .update(manifestBytes)
+  .update(lockBytes)
+  .update(platform)
+  .digest("hex");
 const digest = crypto
   .createHash("sha256")
-  .update(fs.readFileSync(path.join(root, "package.json")))
-  .update(fs.readFileSync(path.join(root, "package-lock.json")))
-  .update(`${process.platform}/${process.arch}/${process.versions.modules}`)
+  .update(
+    JSON.stringify({
+      dependencies: manifest.dependencies,
+      devDependencies: manifest.devDependencies,
+      optionalDependencies: manifest.optionalDependencies,
+      overrides: manifest.overrides,
+    }),
+  )
+  .update(lockBytes)
+  .update(platform)
   .digest("hex");
 const marker = path.join(root, "node_modules", ".weld-dependencies.sha256");
 const present = ["next", "react", "react-dom", "three", "typescript"].every(
@@ -21,8 +39,9 @@ const present = ["next", "react", "react-dom", "three", "typescript"].every(
 if (
   present &&
   fs.existsSync(marker) &&
-  fs.readFileSync(marker, "utf8") === digest
+  [digest, legacyDigest].includes(fs.readFileSync(marker, "utf8"))
 ) {
+  fs.writeFileSync(marker, digest);
   console.log("Dependencies unchanged; skipping npm ci.");
   process.exit(0);
 }

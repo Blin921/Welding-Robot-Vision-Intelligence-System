@@ -7,11 +7,12 @@
     "build": "next build",
     "start": "node scripts/start-production.cjs",
     "typecheck": "tsc --noEmit",
-    "test:ui": "node scripts/acquisition-check.cjs",
+    "test:ui": "node scripts/requirements-check.cjs",
     "lint": "eslint . --max-warnings 0",
     "test": "vitest run",
     "format": "prettier --write src scripts *.ts *.mjs *.json README.md",
-    "postbuild": "node scripts/prepare-runtime.cjs"
+    "postbuild": "node scripts/prepare-runtime.cjs",
+    "test:performance": "node scripts/performance-check.cjs"
   },
   "dependencies": {
     "lucide-react": "0.468.0",

@@ -17,6 +17,7 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { useWorkspace } from "../stores/provider";
+import { copyText } from "../lib/clipboard";
 import { Notice, Panel } from "./ui";
 import SeamList, { seamLabel } from "./SeamList";
 const xyz = (value: number[] | undefined) =>
@@ -27,10 +28,12 @@ export default function ContextPanels({
   onAction,
   onTaskOpen,
   onNavigate,
+  onScan,
   calibrationMode = "pairs",
   pairCount = 0,
 }: {
   tab: number;
+  onScan: () => void;
   calibrationMode?: "pairs" | "matrix";
   pairCount?: number;
   minLength: number;
@@ -93,7 +96,7 @@ export default function ContextPanels({
             {[
               ["当前帧", frame?.id ?? "未选择"],
               ["文件格式", "PCD"],
-              ["点云数量", cloud?.header.n.toLocaleString() ?? "—"],
+              ["点云数量", cloud?.header.n_full.toLocaleString() ?? "—"],
               ["数据来源", frame?.source ?? "—"],
               ["坐标系", "相机系"],
               ["标定状态", calib?.has_calib ? "已标定" : "未标定"],
@@ -117,12 +120,7 @@ export default function ContextPanels({
           <button
             className="primary wide"
             disabled={Boolean(state.activeTask || state.pending)}
-            onClick={() => {
-              onNavigate(1);
-              document
-                .querySelector<HTMLButtonElement>(".left-column form .primary")
-                ?.click();
-            }}
+            onClick={onScan}
           >
             <Play size={15} fill="currentColor" />
             开始采集
@@ -227,7 +225,9 @@ export default function ContextPanels({
           {program ? (
             <>
               {program.uncalibrated && (
-                <Notice warning>坐标仍是相机系，禁止上机</Notice>
+                <div className="uncalibrated-warning">
+                  <Notice warning>坐标仍是相机系，禁止上机</Notice>
+                </div>
               )}
               {program.data.issues.length > 0 && (
                 <details className="issues" open>
@@ -252,7 +252,7 @@ export default function ContextPanels({
                   className="secondary"
                   onClick={async () => {
                     try {
-                      await navigator.clipboard.writeText(program.data.ls_text);
+                      await copyText(program.data.ls_text);
                       store.notify("程序文本已复制");
                     } catch {
                       store.notify(
@@ -385,7 +385,7 @@ export default function ContextPanels({
             </div>
             <div>
               <small>点云总数</small>
-              <strong>{cloud?.header.n.toLocaleString() ?? "—"}</strong>
+              <strong>{cloud?.header.n_full.toLocaleString() ?? "—"}</strong>
             </div>
             <div>
               <small>实例数</small>

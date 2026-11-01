@@ -7,9 +7,10 @@ fs.cpSync(
   path.join(runtime, ".next", "static"),
   { recursive: true },
 );
-fs.cpSync(path.join(root, "public"), path.join(runtime, "public"), {
-  recursive: true,
-});
+if (fs.existsSync(path.join(root, "public")))
+  fs.cpSync(path.join(root, "public"), path.join(runtime, "public"), {
+    recursive: true,
+  });
 console.log(
   "Standalone runtime prepared with static files and reference assets.",
 );

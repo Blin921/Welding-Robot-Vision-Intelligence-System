@@ -29,31 +29,10 @@ npm run dev
 
 旧的 `Update-And-Start.cmd` 和 `Start-From-Git.cmd` 仍可用，主流程不再依赖这两个脚本。后续更新直接推送 main。
 
-### 旧版压缩包（不随 Git 源码更新）
+## 当前需求书版
 
-旧的 v3 运行包 [WeldVision-Acquisition-v3.zip](deliverables/WeldVision-Acquisition-v3.zip)，完整解压到新文件夹后：
+七个入口保留。全屏流式布局，三维视口深色；宽屏三栏，窄于 1200px 时右栏并入左栏页签，视口最少 600px。数据采集页已从零重做，不再使用参考图控件或固定画布缩放；原三维渲染调度和预演速度保留。
 
-- 安装 [Node.js 24 LTS 或更新版本](https://nodejs.org/)。
-- Windows 双击 `Start-Windows.bat`；macOS 双击 `Start-Mac.command`；Linux 执行 `sh start.sh`。
-- 已包含生产运行依赖；不需要 npm ci 或首次编译。也可在解压目录执行 `node launch.cjs`。
-- 默认端口 3000，被占用时自动使用 3001–3010；以启动窗口的 `READY` 地址为准。
+默认连接 FastAPI。说明书的离线流程是后端 `WEBAPP_NO_MODEL=1` 配合真实 `sw2_e30` 历史产物及复用开关；没有后端时可在设置手动切换「浏览器自测」，两者不混淆。此仓库不包含后端、历史产物或设备。
 
-也可直接从源码启动：
-
-```sh
-cd frontend
-npm ci
-npm run dev
-```
-
-默认使用浏览器演示数据，不需要相机和后端。真实后端与机器人控制器不包含在此交付中。
-
-## 数据采集参考图版 v3
-
-所有页面按 PDF 调整模块、排版和颜色；数据采集保留当前三栏排版。所有三维页面恢复共用原有 PointCloud 渲染器、原始演示点云和 RAF 动画循环，不使用截图重建点云，不增加限帧或更改预演播放速度。
-
-先看 [新版数据采集截图](frontend/screenshots/acquisition-v3.png)。支持真实 PCD 解析/预览/导出、帧管理、点云操作、参数校验、任务互斥/轮询、日志与历史。三维数据保持原实现；真采集需要现有后端及相机。未宣称整页逐像素零差异。
-
-如果已有旧版在运行，请以新版启动窗口打印的 READY 地址为准。
-
-当前排版截图见 `frontend/screenshots/layout-acquisition.png` 及 `layout-page-0/2/3/4/5/6.png`。最新改动请使用上面的 main 更新流程运行。
+需求实现与检查见 [frontend/README.md](frontend/README.md)，现场部署见 [DEPLOYMENT.md](DEPLOYMENT.md)。最新截图以 `frontend/screenshots/requirements-` 开头。源码更新直接推 main，旧运行压缩包不再维护。
