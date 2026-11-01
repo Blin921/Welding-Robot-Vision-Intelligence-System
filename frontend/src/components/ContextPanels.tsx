@@ -19,6 +19,7 @@ import {
 import { useWorkspace } from "../stores/provider";
 import { copyText } from "../lib/clipboard";
 import { Notice, Panel } from "./ui";
+import AcquisitionStatus from "./acquisition/AcquisitionStatus";
 import SeamList, { seamLabel } from "./SeamList";
 const xyz = (value: number[] | undefined) =>
   value?.map((n) => n.toFixed(3)).join(", ") ?? "—";
@@ -87,49 +88,7 @@ export default function ContextPanels({
       </div>
     </Panel>
   );
-  if (tab === 1) {
-    const frame = state.frames.find((f) => f.id === state.frame);
-    return (
-      <>
-        <Panel title="当前帧信息" icon={<FileCode2 />}>
-          <div className="frame-info-grid">
-            {[
-              ["当前帧", frame?.id ?? "未选择"],
-              ["文件格式", "PCD"],
-              ["点云数量", cloud?.header.n_full.toLocaleString() ?? "—"],
-              ["数据来源", frame?.source ?? "—"],
-              ["坐标系", "相机系"],
-              ["标定状态", calib?.has_calib ? "已标定" : "未标定"],
-            ].map(([label, value]) => (
-              <div key={label}>
-                <small>{label}</small>
-                <strong>{value}</strong>
-              </div>
-            ))}
-          </div>
-        </Panel>
-        <Panel title="采集任务" icon={<Activity />}>
-          <div className="scan-task-progress">
-            <span className={state.activeTask ? "running" : ""} />
-            <small>{state.activeTask ? "任务运行中" : "空闲"}</small>
-          </div>
-          <p className="ready-line">
-            <ShieldCheck size={17} />
-            采集与识别任务互斥
-          </p>
-          <button
-            className="primary wide"
-            disabled={Boolean(state.activeTask || state.pending)}
-            onClick={onScan}
-          >
-            <Play size={15} fill="currentColor" />
-            开始采集
-          </button>
-        </Panel>
-        {logs}
-      </>
-    );
-  }
+  if (tab === 1) return <AcquisitionStatus onScan={onScan} logs={logs} />;
   if (tab === 3)
     return (
       <>
@@ -469,3 +428,4 @@ export default function ContextPanels({
     </>
   );
 }
+

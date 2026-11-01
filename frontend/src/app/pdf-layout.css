@@ -1306,3 +1306,15 @@ body {
 .pdf-app .geometry-seam-heading > span {
   font-size: 14px;
 }
+
+
+/* Acquisition uses the same controls, spacing and theme tokens as the workflow. */
+.pdf-app .acquisition-distance { margin-bottom: 15px; }
+.pdf-app .acquisition-distance > span { display: block; margin-bottom: 8px; }
+.pdf-app .acquisition-distance > div { display: flex; align-items: center; gap: 8px; }
+.pdf-app .acquisition-distance .field { flex: 1; min-width: 0; margin: 0; }
+.pdf-app .acquisition-distance .field > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.pdf-app .acquisition-distance .field input { width: 100%; min-width: 0; }
+.pdf-app .acquisition-frame-list > button:focus-visible,
+.pdf-app .acquisition-frame-list:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
+.pdf-app .acquisition-files .file-drop.drag-active { border-color: var(--orange); background: var(--orange-bg); }
