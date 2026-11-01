@@ -1488,3 +1488,10 @@
 
 .nativeFooterMode { flex: 1; text-align: center; font-size: 13px; color: #728999; white-space: nowrap; }
 @media (max-width: 1199px) { .nativeFooterMode { display: none; } }
+
+/* Allow the full Chinese system name next to the supplied brand mark. */
+.header .brand { width: auto; min-width: 305px; }
+.brand .sprite { width: auto !important; font-size: 21px; gap: 10px; }
+.header nav { min-width: 760px; }
+
+.brand .sprite > img { width: 48px; height: 48px; object-fit: contain; flex-shrink: 0; border-radius: 5px; }

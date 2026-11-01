@@ -72,7 +72,7 @@ function Sprite({
   const heading = labels.get(`${x}:${y}` as "45:108");
   const Icon = nav >= 0 ? icons[nav] : heading?.[0];
   let content;
-  if (x === 47 && y === 27) content = <><BrandMark /><strong>焊缝识别系统</strong></>;
+  if (x === 47 && y === 27) content = <><BrandMark /><strong>焊接机器人视觉识别系统</strong></>;
   else if (nav >= 0) content = <>{Icon && <Icon size={15} />}{navigation[nav].label}</>;
   else if (heading) content = <>{Icon && <Icon size={19} />}{heading[1]}</>;
   else if (x === 1158) content = <><i className={state.health?.model_ok ? styles.green : styles.red} />模型</>;
@@ -325,7 +325,7 @@ export default function AcquisitionPage({
         <header className={styles.header}>
           <button
             className={styles.brand}
-            aria-label="焊缝识别系统，返回首页"
+            aria-label="焊接机器人视觉识别系统，返回首页"
             onClick={() => onNavigate(0)}
           >
             <Sprite x={47} y={27} w={207} h={43} />

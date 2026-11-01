@@ -314,7 +314,7 @@ function Workspace({
         <header className="topbar">
           <button className="brand" onClick={() => go(0)}>
             <BrandMark />
-            <span>焊缝识别系统</span>
+            <span>焊接机器人视觉识别系统</span>
           </button>
           <nav aria-label="主要导航">
             {navigation.map((item, i) => (
