@@ -490,10 +490,13 @@ export default function PointCloud(props: Props) {
         }
       }
     };
+    let viewportWidth = 0, viewportHeight = 0;
     const resize = () => {
       const width = el.clientWidth,
         height = el.clientHeight;
-      if (!width || !height) return;
+      if (!width || !height || (width === viewportWidth && height === viewportHeight)) return;
+      viewportWidth = width;
+      viewportHeight = height;
       renderer.setSize(width, height);
       perspective.aspect = width / height;
       const halfHeight = radius * 0.68;
@@ -504,6 +507,8 @@ export default function PointCloud(props: Props) {
       camera.updateProjectionMatrix();
       for (const l of lines.values()) l.material.resolution.set(width, height);
       travelled.material.resolution.set(width, height);
+      // Resizing clears the WebGL buffer. Paint before the browser presents it.
+      renderer.render(scene, camera);
     };
     const observer = new ResizeObserver(resize);
     observer.observe(el);
@@ -572,3 +577,4 @@ export default function PointCloud(props: Props) {
     </div>
   );
 }
+

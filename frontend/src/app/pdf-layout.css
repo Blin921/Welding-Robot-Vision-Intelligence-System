@@ -1318,3 +1318,36 @@ body {
 .pdf-app .acquisition-frame-list > button:focus-visible,
 .pdf-app .acquisition-frame-list:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
 .pdf-app .acquisition-files .file-drop.drag-active { border-color: var(--orange); background: var(--orange-bg); }
+
+/* Fill the viewport at every window size, without a fixed desktop canvas. */
+html, body { min-width: 0; min-height: 0; overflow: hidden; }
+.app.pdf-app {
+  width: 100%; max-width: none; height: 100dvh;
+  min-width: 0; min-height: 0; margin: 0; padding: 0;
+}
+.pdf-app .workspace { min-width: 0; }
+.pdf-app .viewer, .pdf-app .main-cloud { min-width: 0; }
+.pdf-app .center-column { overflow: hidden; }
+.pdf-app .topbar, .pdf-app .task-center { border-radius: 0; }
+.pdf-app .app-fullscreen { flex-shrink: 0; min-width: 32px; padding: 5px; }
+@media (max-width: 935px) {
+  .pdf-app .workspace { grid-template-columns: 260px minmax(0, 1fr); }
+  .pdf-app .topbar { grid-template-columns: auto minmax(0, 1fr); gap: 0 6px; padding-inline: 8px; }
+  .pdf-app .topbar nav { overflow-x: auto; justify-content: flex-start; min-width: 0; }
+  .pdf-app .topbar nav > button { flex-shrink: 0; }
+  .pdf-app .health { display: none; }
+  .pdf-app .header-tools { grid-column: 2; grid-row: 1; justify-content: flex-end; }
+  .pdf-app .health > span, .pdf-app .demo-tag, .pdf-app .avatar { display: none; }
+  .pdf-app .viewer-toolbar { flex-wrap: wrap; }
+  .pdf-app .viewport-label { display: none; }
+}
+@media (max-width: 640px) {
+  .pdf-app .workspace { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(160px, 38%) minmax(0, 1fr); gap: 8px; }
+  .pdf-app .workspace.compact .left-column { grid-column: 1; grid-row: 1; }
+  .pdf-app .workspace.compact .center-column { grid-column: 1; grid-row: 2; }
+  .pdf-app .viewer { min-height: 0; }
+  .pdf-app .main-cloud { min-height: 0; }
+  .pdf-app .viewer-heading { min-height: 32px; padding: 6px 8px; }
+  .pdf-app .task-center { min-width: 0; }
+  .pdf-app .footer-note, .pdf-app .history-button { display: none; }
+}

@@ -44,6 +44,7 @@ import {
 } from "../lib/validation";
 import { Modal, Notice } from "../components/ui";
 import Overview from "../components/Overview";
+import FullscreenButton from "../components/FullscreenButton";
 import BrandMark from "../components/BrandMark";
 import WorkflowControls, {
   INITIAL_PAIRS,
@@ -436,6 +437,7 @@ function Workspace({
             </button>
           </div>
           <div className="header-tools">
+            <FullscreenButton />
             <button
               className={`demo-tag ${mode === "live" ? "live-mode" : ""}`}
               onClick={() => setDialog({ kind: "settings" })}
@@ -765,3 +767,4 @@ function Workspace({
     </>
   );
 }
+
