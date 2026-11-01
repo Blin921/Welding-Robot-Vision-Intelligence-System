@@ -6,6 +6,22 @@
 
 源码位于 [frontend/](frontend/)，完整开发与接口说明见 [frontend/README.md](frontend/README.md)。
 
+### 推荐：用 Git 更新并运行（Windows CMD）
+
+先安装 Git for Windows 和 Node.js 24 LTS。首次只需克隆一次：
+
+```cmd
+git clone --single-branch --branch codex/weld-vision-frontend https://github.com/Blin921/Welding-Robot-Vision-Intelligence-System.git
+cd Welding-Robot-Vision-Intelligence-System
+Update-And-Start.cmd
+```
+
+以后先在旧运行窗口按 Ctrl+C 停止，再进入本地仓库执行 `Update-And-Start.cmd`。脚本执行 `git pull --ff-only`，只有首次启动、依赖清单或 Node/平台变化才执行 `npm ci`，然后用开发模式运行最新源码，无需每次生产构建或下载压缩包。打开终端打印的 Local 地址，默认 http://localhost:3000，端口占用时 Next.js 会提示实际地址。更新冲突会停止，不强制覆盖本地修改。
+
+已有此分支的 Git 仓库可先执行 `git pull --ff-only` 获取脚本。旧 ZIP 解压目录没有 `.git`，不能直接拉取更新，请在新目录首次克隆。只启动而不联网更新时执行 `Start-From-Git.cmd`。
+
+首次依赖下载慢，可先执行 `npm config set registry https://registry.npmmirror.com`；恢复官方源：`npm config set registry https://registry.npmjs.org`。后续仅改页面代码时会跳过依赖安装。
+
 ### 下载并运行
 
 下载新版 [WeldVision-Acquisition-v3.zip](deliverables/WeldVision-Acquisition-v3.zip)，完整解压到新文件夹后：
