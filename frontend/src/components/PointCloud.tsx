@@ -227,21 +227,38 @@ export default function PointCloud(props: Props) {
     const tool = new THREE.Group();
     // Enlarge the visual model around the TCP origin; poses and paths stay in mm.
     tool.scale.setScalar(3);
+    // Smooth, lit copper nozzle; its sharp endpoint remains exactly at local TCP (0,0,0).
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x33465d, 2));
+    const toolLight = new THREE.DirectionalLight(0xffffff, 2.5);
+    toolLight.position.set(1, 2, 3);
+    scene.add(toolLight);
     const tip = new THREE.Mesh(
-      new THREE.ConeGeometry(6, 26, 16),
-      new THREE.MeshBasicMaterial({ color: 0xe7ac5c }),
+      new THREE.ConeGeometry(9, 30, 64),
+      new THREE.MeshStandardMaterial({
+        color: 0xf5a13c,
+        metalness: 0.35,
+        roughness: 0.28,
+      }),
     );
     tip.rotation.x = Math.PI / 2;
-    tip.position.z = -13;
+    tip.position.z = -15;
     tool.add(tip);
-    const grip = new THREE.Mesh(
-      new THREE.CylinderGeometry(8, 8, 40, 16),
-      new THREE.MeshBasicMaterial({ color: 0xa8bbcc }),
+    const collar = new THREE.Mesh(
+      new THREE.CylinderGeometry(10, 10, 4, 64),
+      new THREE.MeshStandardMaterial({
+        color: 0x164c64,
+        metalness: 0.45,
+        roughness: 0.3,
+      }),
     );
-    grip.rotation.x = Math.PI / 2;
-    grip.position.z = -42;
-    tool.add(grip);
-    tool.add(new THREE.AxesHelper(35));
+    collar.rotation.x = Math.PI / 2;
+    collar.position.z = -30;
+    tool.add(collar);
+    const contact = new THREE.Mesh(
+      new THREE.SphereGeometry(1.4, 20, 12),
+      new THREE.MeshBasicMaterial({ color: 0xfff3ce }),
+    );
+    tool.add(contact);
     tool.visible = false;
     tool.traverse((object) => {
       object.renderOrder = 5;
