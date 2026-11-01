@@ -789,3 +789,86 @@ html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background:
 .pdf-app .brand { width: auto; min-width: 305px; white-space: nowrap; font-size: 21px; }
 
 .pdf-app .brand img.brand-symbol { width: 48px; height: 48px; object-fit: contain; flex-shrink: 0; border-radius: 5px; }
+
+/* Dense desktop layout: smaller containers and spacing, readable text at 100% zoom. */
+.pdf-app.app { padding: 10px 12px; gap: 10px; font-size: 16px; }
+.pdf-app .topbar { display: flex; height: 60px; min-height: 60px; padding: 0 12px; gap: 8px; overflow: visible; }
+.pdf-app .brand { min-width: 282px; font-size: 21px; gap: 8px; }
+.pdf-app .brand img.brand-symbol { width: 40px; height: 40px; }
+.pdf-app .topbar nav { min-width: 0; flex: 1; flex-shrink: 1; gap: 2px; }
+.pdf-app .topbar nav > button { padding: 0 6px; gap: 5px; font-size: 15px; }
+.pdf-app .health { gap: 4px; }
+.pdf-app .health > span { height: 30px; padding: 3px 5px; font-size: 14px; }
+.pdf-app .header-tools { gap: 4px; }
+.pdf-app .header-tools .demo-tag { height: 30px; min-height: 30px; padding: 3px 5px; }
+.pdf-app .header-tools > button { min-width: 26px; }
+.pdf-app .workspace[class] { grid-template-columns: 288px minmax(0, 1fr) 300px; gap: 10px; margin: 0; }
+.pdf-app .left-column, .pdf-app .right-column, .pdf-app .center-column { gap: 10px; }
+.pdf-app .panel-title { height: 34px; min-height: 34px; padding: 6px 10px; font-size: 18px; }
+.pdf-app .panel-collapse { font-size: 18px; }
+.pdf-app .panel-body { padding: 8px 10px; }
+.pdf-app .field { grid-template-columns: 105px minmax(0, 1fr); gap: 6px; margin-bottom: 6px; }
+.pdf-app .field > span { font-size: 15px; line-height: 1.25; }
+.pdf-app input, .pdf-app select, .pdf-app textarea { padding: 5px 7px; font-size: 16px; }
+.pdf-app .field input, .pdf-app .field select { min-height: 30px; }
+.pdf-app .switch-row { margin: 7px 0; font-size: 15px; }
+.pdf-app .primary, .pdf-app .secondary { min-height: 32px; padding: 6px 10px; font-size: 16px; }
+.pdf-app .hint { margin: 5px 0; font-size: 14px; }
+.pdf-app .notice { padding: 7px 8px; margin: 7px 0; font-size: 14px; }
+.pdf-app .recognition-actions { margin-top: 10px; }
+.pdf-app .recognition-actions .switch-row { margin: 8px 0; }
+.pdf-app .recognition-frame-select { height: 32px; margin-bottom: 8px; }
+.pdf-app .recognition-stats small, .pdf-app .calibration-stats small { font-size: 14px; }
+.pdf-app .recognition-stats > div { padding: 7px 4px; }
+.pdf-app .recognition-stats strong { font-size: 21px; }
+.pdf-app .page-2 .right-column > .panel:nth-child(2) { min-height: 0; flex: 1; }
+.pdf-app .page-2 .logs-panel { flex: 0 0 140px; min-height: 0; }
+.pdf-app .compact-seams .seam-card { min-height: 64px; grid-template-rows: 22px 22px; padding: 6px 4px; }
+.pdf-app .compact-seams .seam-actions > button { height: 24px; }
+.pdf-app .page-3 .right-column > .panel:first-child { flex-basis: 150px; }
+.pdf-app .page-3 .right-column > .panel:nth-child(2) { flex-basis: 160px; }
+.pdf-app .page-3 .right-column .detail-list { gap: 4px; font-size: 14px; }
+.pdf-app .viewer-heading { min-height: 34px; padding: 6px 10px; }
+.pdf-app .viewer-toolbar { min-height: 38px; padding: 2px 10px 6px; }
+.pdf-app .viewer-toolbar button { min-height: 30px; }
+.pdf-app .program-advanced > summary { padding: 8px 10px !important; margin: 0 -10px 8px !important; }
+.pdf-app .task-center { height: 44px; min-height: 44px; padding: 0 12px; }
+.pdf-app .task-toggle, .pdf-app .task-toggle strong { font-size: 16px; }
+.pdf-app .footer-note, .pdf-app .footer-task, .pdf-app .history-button { font-size: 14px; }
+.pdf-app .task-drawer { bottom: 43px; }
+@media (max-width: 1450px) {
+  .pdf-app .topbar { height: 84px; min-height: 84px; flex-wrap: wrap; align-content: center; gap: 2px 8px; }
+  .pdf-app .topbar .brand { margin-right: auto; }
+  .pdf-app .topbar nav { order: 10; flex: 1 0 100%; height: 32px; justify-content: space-between; }
+  .pdf-app .topbar nav > button.active:after { bottom: 0; }
+}
+@media (max-width: 1199px) {
+  .pdf-app .workspace[class] { grid-template-columns: 288px minmax(0, 1fr); }
+}
+@media (max-width: 700px) {
+  .pdf-app .workspace[class] { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(120px, 35%) minmax(0, 1fr); }
+  .pdf-app .topbar .health, .pdf-app .header-tools .demo-tag, .pdf-app .avatar { display: none; }
+}
+.pdf-app .logs-panel .panel-body { height: calc(100% - 34px); }
+.pdf-app .log-list { min-height: 0; padding: 6px; }
+.pdf-app .page-4 .right-column > .panel:first-child { flex: 1; min-height: 0; }
+.pdf-app .page-4 .right-column .logs-panel { flex: 0 0 130px; min-height: 0; }
+.pdf-app .geometry-seam-heading { padding: 7px 10px; margin: -8px -10px 8px; }
+.pdf-app .geometry-seam-heading > span { font-size: 14px; }
+.pdf-app .seam-geometry { gap: 6px 8px; margin-block: 8px; font-size: 15px; }
+.pdf-app .endpoint { padding: 7px 2px; gap: 6px; font-size: 15px; }
+.pdf-app .endpoint p { margin-top: 4px; font-size: 14px; }
+.pdf-app .page-4 .single-seam-actions { margin: 8px -10px -8px; padding: 8px 10px; }
+.pdf-app .single-seam-actions h3 { margin-bottom: 7px; }
+.pdf-app .single-seam-actions button { padding: 5px 0; gap: 4px; font-size: 14px; }
+.pdf-app .page-5 .right-column > .panel:first-child { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.pdf-app .page-5 .right-column > .panel:first-child > .panel-body { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
+.pdf-app .page-5 .right-column > .panel:last-child { flex: 0 0 auto; }
+.pdf-app .page-5 .code-preview { flex: 1; min-height: 60px; max-height: none; margin: 0; font-size: 14px; }
+.pdf-app .page-5 .issues { flex-shrink: 0; margin: 0; }
+.pdf-app .page-5 .issues ul { max-height: 66px; overflow: auto; font-size: 14px; }
+.pdf-app .page-5 .two-buttons { flex-shrink: 0; margin-top: 0; }
+.pdf-app .tcp-cells > div { padding: 6px; }
+.pdf-app .tcp-cells strong { font-size: 20px; }
+.pdf-app .coordinate-pair { gap: 6px; margin-top: 8px; }
+.pdf-app .coordinate-pair p { font-size: 14px; margin: 5px 0 0; }

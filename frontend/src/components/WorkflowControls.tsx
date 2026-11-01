@@ -583,7 +583,7 @@ export default function WorkflowControls({
                 }
               />
             </label>
-            <details open className="program-advanced">
+            <details className="program-advanced">
               <summary>高级参数</summary>
               <label className="field">
                 <span>指令名称</span>

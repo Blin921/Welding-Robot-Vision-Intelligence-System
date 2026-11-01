@@ -284,24 +284,28 @@ export default function ContextPanels({
         </Panel>
         <Panel title="TCP 坐标位置" icon={<Crosshair />}>
           <div id="tcp-context">
-            <div className="tcp-cells">
-              {["X (mm)", "Y (mm)", "Z (mm)"].map((label) => (
-                <div key={label}>
-                  <small>{label}</small>
-                  <strong>—</strong>
+            {!program && (
+              <>
+                <div className="tcp-cells">
+                  {["X (mm)", "Y (mm)", "Z (mm)"].map((label) => (
+                    <div key={label}>
+                      <small>{label}</small>
+                      <strong>—</strong>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <div className="coordinate-pair">
-              <div>
-                <strong>相机系坐标</strong>
-                <p>等待程序生成</p>
-              </div>
-              <div>
-                <strong>基座系坐标</strong>
-                <p>等待程序生成</p>
-              </div>
-            </div>
+                <div className="coordinate-pair">
+                  <div>
+                    <strong>相机系坐标</strong>
+                    <p>等待程序生成</p>
+                  </div>
+                  <div>
+                    <strong>基座系坐标</strong>
+                    <p>等待程序生成</p>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </Panel>
       </>
