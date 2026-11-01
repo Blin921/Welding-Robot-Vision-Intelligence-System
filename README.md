@@ -22,9 +22,9 @@ Update-And-Start.cmd
 
 首次依赖下载慢，可先执行 `npm config set registry https://registry.npmmirror.com`；恢复官方源：`npm config set registry https://registry.npmjs.org`。后续仅改页面代码时会跳过依赖安装。
 
-### 下载并运行
+### 旧版压缩包（不随 Git 源码更新）
 
-下载新版 [WeldVision-Acquisition-v3.zip](deliverables/WeldVision-Acquisition-v3.zip)，完整解压到新文件夹后：
+旧的 v3 运行包 [WeldVision-Acquisition-v3.zip](deliverables/WeldVision-Acquisition-v3.zip)，完整解压到新文件夹后：
 
 - 安装 [Node.js 24 LTS 或更新版本](https://nodejs.org/)。
 - Windows 双击 `Start-Windows.bat`；macOS 双击 `Start-Mac.command`；Linux 执行 `sh start.sh`。
@@ -43,8 +43,10 @@ npm run dev
 
 ## 数据采集参考图版 v3
 
-本次重写数据采集页并默认打开。按最新 1680×944 参考图安排顶栏、三栏面板、帧列表、扫描参数、三维工具和任务中心；其余页面尚未按本次图片重写。
+所有页面按 PDF 调整模块、排版和颜色；数据采集保留当前三栏排版。所有三维页面恢复共用原有 PointCloud 渲染器、原始演示点云和 RAF 动画循环，不使用截图重建点云，不增加限帧或更改预演播放速度。
 
-先看 [新版数据采集截图](frontend/screenshots/acquisition-v3.png)。支持真实 PCD 解析/预览/导出、帧管理、点云操作、参数校验、任务互斥/轮询、日志与历史。没有原始 PCD，参考工件是图片可见像素重建示例，不能恢复遮挡结构或真实物理尺寸；真采集需要现有后端及相机。未宣称整页逐像素零差异。
+先看 [新版数据采集截图](frontend/screenshots/acquisition-v3.png)。支持真实 PCD 解析/预览/导出、帧管理、点云操作、参数校验、任务互斥/轮询、日志与历史。三维数据保持原实现；真采集需要现有后端及相机。未宣称整页逐像素零差异。
 
 如果已有旧版在运行，请以新版启动窗口打印的 READY 地址为准。
+
+当前排版截图见 `frontend/screenshots/layout-acquisition.png` 及 `layout-page-0/2/3/4/5/6.png`。最新改动请使用上面的 Git CMD 流程运行。

@@ -1,11 +1,5 @@
 "use client";
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Box,
   CircleHelp,
@@ -52,6 +46,7 @@ import WorkspaceViewport from "../components/WorkspaceViewport";
 import ContextPanels from "../components/ContextPanels";
 import TaskCenter from "../components/TaskCenter";
 import AcquisitionPage from "../components/acquisition/AcquisitionPage";
+import PdfStage from "../components/PdfStage";
 import { seamLabel } from "../components/SeamList";
 const navigation = [
   { label: "首页", icon: Box },
@@ -81,14 +76,6 @@ type Dialog =
     }
   | { kind: "push"; request: PushRequest; name: string }
   | null;
-function subscribeCompact(callback: () => void) {
-  const media = matchMedia("(max-width: 1199px)");
-  media.addEventListener("change", callback);
-  return () => media.removeEventListener("change", callback);
-}
-function compactSnapshot() {
-  return matchMedia("(max-width: 1199px)").matches;
-}
 export default function Page() {
   const [mode, setMode] = useState<AppMode>(
     process.env.NEXT_PUBLIC_DATA_MODE === "live" ? "live" : "demo",
@@ -134,11 +121,7 @@ function Workspace({
     leftColumn.current?.scrollTo({ top: 0 });
     rightColumn.current?.scrollTo({ top: 0 });
   }, [tab, compactPanel]);
-  const compact = useSyncExternalStore(
-      subscribeCompact,
-      compactSnapshot,
-      () => false,
-    ),
+  const compact = false,
     closeDialog = useCallback(() => setDialog(null), []);
   // Only non-secret FTP preferences are restored. A password is never persisted.
   useEffect(() => {
@@ -323,418 +306,434 @@ function Workspace({
   if (tab === 1)
     return <AcquisitionPage onNavigate={go} onMode={onMode} mode={mode} />;
   return (
-    <div className={`app ${light ? "light" : ""}`}>
-      <header className="topbar">
-        <button className="brand" onClick={() => go(0)}>
-          <BrandMark />
-          <span>焊缝识别系统</span>
-        </button>
-        <nav aria-label="主要导航">
-          {navigation.map((item, i) => (
-            <button
-              key={item.label}
-              className={tab === i ? "active" : ""}
-              aria-current={tab === i ? "page" : undefined}
-              onClick={() => go(i)}
-            >
-              <item.icon size={16} />
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </nav>
-        <div className="health" aria-label="系统健康状态">
-          <span
-            title={
-              state.health?.model_ok
-                ? "模型已加载"
-                : (state.health?.model_error ??
-                  state.healthError ??
-                  "等待健康自检")
-            }
-          >
-            <i
-              className={
+    <PdfStage>
+      <div className={`app pdf-app ${light ? "light" : ""}`}>
+        <header className="topbar">
+          <button className="brand" onClick={() => go(0)}>
+            <BrandMark />
+            <span>焊缝识别系统</span>
+          </button>
+          <nav aria-label="主要导航">
+            {navigation.map((item, i) => (
+              <button
+                key={item.label}
+                className={tab === i ? "active" : ""}
+                aria-current={tab === i ? "page" : undefined}
+                onClick={() => go(i)}
+              >
+                <item.icon size={16} />
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </nav>
+          <div className="health" aria-label="系统健康状态">
+            <span
+              title={
                 state.health?.model_ok
-                  ? "green"
-                  : state.health
-                    ? "red"
-                    : "yellow"
+                  ? "模型已加载"
+                  : (state.health?.model_error ??
+                    state.healthError ??
+                    "等待健康自检")
               }
-            />
-            模型
-            <span className="sr-only">
-              {" "}
-              ·{" "}
-              {state.health?.model_ok
-                ? "就绪"
-                : state.health
-                  ? "未加载"
-                  : "未知"}
-            </span>
-          </span>
-          <span
-            title={
-              state.health?.cpp_ok
-                ? "C++ 解算器可用"
-                : "解算器未就绪，请先在后端编译 C++ 可执行文件"
-            }
-          >
-            <i
-              className={
-                state.health?.cpp_ok ? "green" : state.health ? "red" : "yellow"
-              }
-            />
-            C++<span className="health-long">解算器</span>
-            <span className="sr-only">
-              {" "}
-              ·{" "}
-              {state.health?.cpp_ok ? "就绪" : state.health ? "未就绪" : "未知"}
-            </span>
-          </span>
-          <span
-            title={
-              calibWarn
-                ? "最大残差超过 1.5mm，请复核"
-                : (calib?.calib_tag ?? "按当前帧独立标定")
-            }
-          >
-            <i
-              className={
-                !calib
-                  ? "yellow"
-                  : calib.uncalibrated
-                    ? "red"
-                    : calibWarn
-                      ? "yellow"
-                      : "green"
-              }
-            />
-            <span className="health-calibration-label">
-              {!calib
-                ? "标定未知"
-                : calib.uncalibrated
-                  ? "当前帧未标定"
-                  : calibWarn
-                    ? "标定需复核"
-                    : "当前帧已标定"}
-            </span>
-          </span>
-          <button
-            onClick={() => setDialog({ kind: "help" })}
-            aria-label="使用说明"
-          >
-            <CircleHelp size={16} />
-          </button>
-        </div>
-        <div className="header-tools">
-          <button
-            className={`demo-tag ${mode === "live" ? "live-mode" : ""}`}
-            onClick={() => setDialog({ kind: "settings" })}
-          >
-            <Radio size={13} />
-            {mode === "demo" ? "离线演示" : "后端模式"}
-          </button>
-          <button
-            title="切换深浅主题"
-            aria-label="切换深浅主题"
-            onClick={() => setLight(!light)}
-          >
-            {light ? <Moon /> : <Sun />}
-          </button>
-          <button
-            title="系统设置"
-            aria-label="系统设置"
-            onClick={() => setDialog({ kind: "settings" })}
-          >
-            <Settings2 />
-          </button>
-          <span className="avatar" aria-label="操作员">
-            <UserRound size={20} />
-          </span>
-        </div>
-      </header>
-      {state.healthError && (
-        <div className="connection-error" role="alert">
-          <TriangleAlert size={16} />
-          {state.healthError}
-          <button onClick={() => void store.retry()}>
-            <RotateCcw size={14} />
-            重新连接
-          </button>
-        </div>
-      )}
-      {tab === 0 ? (
-        <Overview
-          light={light}
-          onNavigate={go}
-          onHelp={() => setDialog({ kind: "help" })}
-        />
-      ) : (
-        <>
-          <main className={`workspace page-${tab} ${compact ? "compact" : ""}`}>
-            <aside className="left-column" ref={leftColumn}>
-              {compact && (
-                <div className="segmented context-tabs">
-                  <button
-                    className={compactPanel === "workflow" ? "active" : ""}
-                    onClick={() => setCompactPanel("workflow")}
-                  >
-                    工作流
-                  </button>
-                  <button
-                    className={compactPanel === "context" ? "active" : ""}
-                    onClick={() => setCompactPanel("context")}
-                  >
-                    焊缝与上下文
-                  </button>
-                </div>
-              )}
-              {!compact || compactPanel === "workflow" ? (
-                <>
-                  <WorkflowControls
-                    tab={tab}
-                    forms={effectiveForms}
-                    setForms={setAndRememberForms}
-                    onCalibrate={calibrate}
-                    onClear={() => setDialog({ kind: "clear" })}
-                    onGenerate={generate}
-                    onPush={push}
-                    onSeamAction={seamAction}
-                  />
-                  <div className="sidebar-foot">
-                    <ShieldCheck size={15} />
-                    <span>
-                      {mode === "demo" ? "浏览器演示" : "后端接口"} · 单位 mm
-                    </span>
-                  </div>
-                </>
-              ) : (
-                context
-              )}
-            </aside>
-            <section className="center-column">
-              <WorkspaceViewport
-                tab={tab}
-                light={light}
-                onNavigate={go}
-                calibrationPairs={
-                  effectiveForms.calibMode === "pairs"
-                    ? effectiveForms.pairs
-                    : undefined
+            >
+              <i
+                className={
+                  state.health?.model_ok
+                    ? "green"
+                    : state.health
+                      ? "red"
+                      : "yellow"
                 }
               />
-            </section>
-            {!compact && (
-              <aside className="right-column" ref={rightColumn}>
-                {context}
+              模型
+              <span className="sr-only">
+                {" "}
+                ·{" "}
+                {state.health?.model_ok
+                  ? "就绪"
+                  : state.health
+                    ? "未加载"
+                    : "未知"}
+              </span>
+            </span>
+            <span
+              title={
+                state.health?.cpp_ok
+                  ? "C++ 解算器可用"
+                  : "解算器未就绪，请先在后端编译 C++ 可执行文件"
+              }
+            >
+              <i
+                className={
+                  state.health?.cpp_ok
+                    ? "green"
+                    : state.health
+                      ? "red"
+                      : "yellow"
+                }
+              />
+              C++<span className="health-long">解算器</span>
+              <span className="sr-only">
+                {" "}
+                ·{" "}
+                {state.health?.cpp_ok
+                  ? "就绪"
+                  : state.health
+                    ? "未就绪"
+                    : "未知"}
+              </span>
+            </span>
+            <span
+              title={
+                calibWarn
+                  ? "最大残差超过 1.5mm，请复核"
+                  : (calib?.calib_tag ?? "按当前帧独立标定")
+              }
+            >
+              <i
+                className={
+                  !calib
+                    ? "yellow"
+                    : calib.uncalibrated
+                      ? "red"
+                      : calibWarn
+                        ? "yellow"
+                        : "green"
+                }
+              />
+              <span className="health-calibration-label">
+                {!calib
+                  ? "标定未知"
+                  : calib.uncalibrated
+                    ? "当前帧未标定"
+                    : calibWarn
+                      ? "标定需复核"
+                      : "当前帧已标定"}
+              </span>
+            </span>
+            <button
+              onClick={() => setDialog({ kind: "help" })}
+              aria-label="使用说明"
+            >
+              <CircleHelp size={16} />
+            </button>
+          </div>
+          <div className="header-tools">
+            <button
+              className={`demo-tag ${mode === "live" ? "live-mode" : ""}`}
+              onClick={() => setDialog({ kind: "settings" })}
+            >
+              <Radio size={13} />
+              {mode === "demo" ? "离线演示" : "后端模式"}
+            </button>
+            <button
+              title="切换深浅主题"
+              aria-label="切换深浅主题"
+              onClick={() => setLight(!light)}
+            >
+              {light ? <Moon /> : <Sun />}
+            </button>
+            <button
+              title="系统设置"
+              aria-label="系统设置"
+              onClick={() => setDialog({ kind: "settings" })}
+            >
+              <Settings2 />
+            </button>
+            <span className="avatar" aria-label="操作员">
+              <UserRound size={20} />
+            </span>
+          </div>
+        </header>
+        {state.healthError && (
+          <div className="connection-error" role="alert">
+            <TriangleAlert size={16} />
+            {state.healthError}
+            <button onClick={() => void store.retry()}>
+              <RotateCcw size={14} />
+              重新连接
+            </button>
+          </div>
+        )}
+        {tab === 0 ? (
+          <Overview
+            light={light}
+            onNavigate={go}
+            onHelp={() => setDialog({ kind: "help" })}
+          />
+        ) : (
+          <>
+            <main
+              className={`workspace page-${tab} ${compact ? "compact" : ""}`}
+            >
+              <aside className="left-column" ref={leftColumn}>
+                {compact && (
+                  <div className="segmented context-tabs">
+                    <button
+                      className={compactPanel === "workflow" ? "active" : ""}
+                      onClick={() => setCompactPanel("workflow")}
+                    >
+                      工作流
+                    </button>
+                    <button
+                      className={compactPanel === "context" ? "active" : ""}
+                      onClick={() => setCompactPanel("context")}
+                    >
+                      焊缝与上下文
+                    </button>
+                  </div>
+                )}
+                {!compact || compactPanel === "workflow" ? (
+                  <>
+                    <WorkflowControls
+                      tab={tab}
+                      forms={effectiveForms}
+                      setForms={setAndRememberForms}
+                      onCalibrate={calibrate}
+                      onClear={() => setDialog({ kind: "clear" })}
+                      onGenerate={generate}
+                      onPush={push}
+                      onSeamAction={seamAction}
+                    />
+                    <div className="sidebar-foot">
+                      <ShieldCheck size={15} />
+                      <span>
+                        {mode === "demo" ? "浏览器演示" : "后端接口"} · 单位 mm
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  context
+                )}
               </aside>
+              <section className="center-column">
+                <WorkspaceViewport
+                  tab={tab}
+                  light={light}
+                  onNavigate={go}
+                  calibrationPairs={
+                    effectiveForms.calibMode === "pairs"
+                      ? effectiveForms.pairs
+                      : undefined
+                  }
+                />
+              </section>
+              {!compact && (
+                <aside className="right-column" ref={rightColumn}>
+                  {context}
+                </aside>
+              )}
+            </main>
+          </>
+        )}
+        <TaskCenter open={taskOpen} setOpen={setTaskOpen} />
+        {state.toast && (
+          <div className={`toast toast-${state.toast.kind}`} role="status">
+            <CircleHelp size={18} />
+            {state.toast.text}
+            <button aria-label="关闭提示" onClick={store.clearToast}>
+              <X size={16} />
+            </button>
+          </div>
+        )}
+        {dialog && (
+          <Modal
+            title={
+              dialog.kind === "uncalibrated"
+                ? "当前帧尚未标定"
+                : dialog.kind === "push"
+                  ? "确认 FTP 程序下发"
+                  : dialog.kind === "clear"
+                    ? "清除当前帧标定？"
+                    : dialog.kind === "settings"
+                      ? "系统连接设置"
+                      : "关于 WELD VISION"
+            }
+            onClose={closeDialog}
+          >
+            {dialog.kind === "uncalibrated" ? (
+              <>
+                <div className="modal-icon danger">
+                  <TriangleAlert />
+                </div>
+                <p>
+                  当前帧 <b>{dialog.frame}</b> · {seamLabel(dialog.seamId)}
+                  <br />
+                  坐标仍是相机系，<strong>禁止上机</strong>
+                  。确认后仅生成供检查的程序文件。
+                </p>
+                <Notice warning>
+                  生成后仍须完成标定并重新生成，才能下发到控制器。
+                </Notice>
+                <div className="modal-actions">
+                  <button
+                    className="secondary"
+                    onClick={() => {
+                      closeDialog();
+                      go(3);
+                    }}
+                  >
+                    前往标定
+                  </button>
+                  <button
+                    className="primary"
+                    onClick={() => {
+                      if (
+                        state.frame !== dialog.frame ||
+                        state.selected !== dialog.seamId
+                      ) {
+                        store.notify("帧或焊缝已改变，请重新确认", "warn");
+                        closeDialog();
+                        return;
+                      }
+                      void store.generate(dialog.settings);
+                      closeDialog();
+                    }}
+                  >
+                    确认生成
+                  </button>
+                </div>
+              </>
+            ) : dialog.kind === "clear" ? (
+              <>
+                <p>
+                  将清除 <b>{state.frame}</b>{" "}
+                  的标定。当前帧已生成程序将失效，需重新生成。
+                </p>
+                <div className="modal-actions">
+                  <button className="secondary" onClick={closeDialog}>
+                    保留标定
+                  </button>
+                  <button
+                    className="primary"
+                    disabled={Boolean(state.pending)}
+                    onClick={() => {
+                      void store.calibrate({ frame: state.frame, clear: true });
+                      closeDialog();
+                    }}
+                  >
+                    确认清除
+                  </button>
+                </div>
+              </>
+            ) : dialog.kind === "push" ? (
+              <>
+                <dl className="confirmation-details">
+                  <dt>目标主机</dt>
+                  <dd>
+                    {dialog.request.host}:{dialog.request.port}
+                  </dd>
+                  <dt>目标目录</dt>
+                  <dd>{dialog.request.remote_dir}</dd>
+                  <dt>程序文件</dt>
+                  <dd>
+                    {/\.ls$/i.test(dialog.name)
+                      ? dialog.name
+                      : dialog.name + ".ls"}
+                  </dd>
+                  <dt>帧 / 焊缝</dt>
+                  <dd>
+                    {dialog.request.frame} / {seamLabel(dialog.request.seam_id)}
+                  </dd>
+                </dl>
+                <Notice warning>
+                  同名程序将被覆盖。只传输文件，不触发电机启动；程序选择与循环启动必须在示教器上人工确认。
+                </Notice>
+                {mode === "demo" && (
+                  <Notice>
+                    当前是浏览器模拟，确认后不会建立真实 FTP 连接。
+                  </Notice>
+                )}
+                <div className="modal-actions">
+                  <button className="secondary" onClick={closeDialog}>
+                    返回检查
+                  </button>
+                  <button
+                    className="primary"
+                    onClick={() => {
+                      if (
+                        state.frame !== dialog.request.frame ||
+                        state.selected !== dialog.request.seam_id
+                      ) {
+                        store.notify("帧或焊缝已改变，请重新确认", "warn");
+                        closeDialog();
+                        return;
+                      }
+                      void store.push(dialog.request);
+                      closeDialog();
+                    }}
+                  >
+                    {mode === "demo" ? "确认模拟下发" : "确认传输文件"}
+                  </button>
+                </div>
+              </>
+            ) : dialog.kind === "settings" ? (
+              <>
+                <p>
+                  当前模式：
+                  {mode === "demo" ? "浏览器离线演示" : "FastAPI 后端接口"}
+                  。切换模式将开启新的前端会话，保留非敏感 FTP 连接设置。
+                </p>
+                <div className="mode-options">
+                  <button
+                    className={mode === "demo" ? "chosen" : ""}
+                    disabled={Boolean(state.activeTask || state.pending)}
+                    onClick={() => onMode("demo")}
+                  >
+                    <Box />
+                    <strong>离线演示</strong>
+                    <small>模拟接口、固定点云；不连接设备</small>
+                  </button>
+                  <button
+                    className={mode === "live" ? "chosen" : ""}
+                    disabled={Boolean(state.activeTask || state.pending)}
+                    onClick={() => onMode("live")}
+                  >
+                    <Radio />
+                    <strong>后端模式</strong>
+                    <small>同源 /api，连接既有 FastAPI</small>
+                  </button>
+                </div>
+                {Boolean(state.activeTask || state.pending) && (
+                  <Notice warning>
+                    任务或提交进行中，请完成后再切换模式。
+                  </Notice>
+                )}
+                <Notice>
+                  后端地址通过 BACKEND_ORIGIN 设置，默认
+                  127.0.0.1:8000。接口失败会明确提示，不会自动切换成模拟成功。
+                </Notice>
+                <button
+                  className="secondary wide"
+                  onClick={() => void store.retry()}
+                >
+                  <RotateCcw size={15} />
+                  刷新健康状态与当前帧
+                </button>
+              </>
+            ) : (
+              <>
+                <p>
+                  使用三维点云完成采集、识别、标定、程序生成、TCP
+                  预演与文件下发。所有几何单位均为毫米，预演使用相机系坐标。
+                </p>
+                <Notice>
+                  {mode === "demo"
+                    ? "当前点云、任务、标定及程序均为浏览器模拟；上传内容不会被推理。"
+                    : "当前通过同源 /api 请求既有后端。后端负责推理、标定、程序生成及 FTP。"}
+                </Notice>
+                <p>
+                  真机程序选择与启动须在示教器上人工确认：T1 倍率不高于
+                  10%、单段模式、手不离急停。
+                </p>
+                <button className="primary wide" onClick={closeDialog}>
+                  我已了解
+                </button>
+              </>
             )}
-          </main>
-        </>
-      )}
-      <TaskCenter open={taskOpen} setOpen={setTaskOpen} />
-      {state.toast && (
-        <div className={`toast toast-${state.toast.kind}`} role="status">
-          <CircleHelp size={18} />
-          {state.toast.text}
-          <button aria-label="关闭提示" onClick={store.clearToast}>
-            <X size={16} />
-          </button>
-        </div>
-      )}
-      {dialog && (
-        <Modal
-          title={
-            dialog.kind === "uncalibrated"
-              ? "当前帧尚未标定"
-              : dialog.kind === "push"
-                ? "确认 FTP 程序下发"
-                : dialog.kind === "clear"
-                  ? "清除当前帧标定？"
-                  : dialog.kind === "settings"
-                    ? "系统连接设置"
-                    : "关于 WELD VISION"
-          }
-          onClose={closeDialog}
-        >
-          {dialog.kind === "uncalibrated" ? (
-            <>
-              <div className="modal-icon danger">
-                <TriangleAlert />
-              </div>
-              <p>
-                当前帧 <b>{dialog.frame}</b> · {seamLabel(dialog.seamId)}
-                <br />
-                坐标仍是相机系，<strong>禁止上机</strong>
-                。确认后仅生成供检查的程序文件。
-              </p>
-              <Notice warning>
-                生成后仍须完成标定并重新生成，才能下发到控制器。
-              </Notice>
-              <div className="modal-actions">
-                <button
-                  className="secondary"
-                  onClick={() => {
-                    closeDialog();
-                    go(3);
-                  }}
-                >
-                  前往标定
-                </button>
-                <button
-                  className="primary"
-                  onClick={() => {
-                    if (
-                      state.frame !== dialog.frame ||
-                      state.selected !== dialog.seamId
-                    ) {
-                      store.notify("帧或焊缝已改变，请重新确认", "warn");
-                      closeDialog();
-                      return;
-                    }
-                    void store.generate(dialog.settings);
-                    closeDialog();
-                  }}
-                >
-                  确认生成
-                </button>
-              </div>
-            </>
-          ) : dialog.kind === "clear" ? (
-            <>
-              <p>
-                将清除 <b>{state.frame}</b>{" "}
-                的标定。当前帧已生成程序将失效，需重新生成。
-              </p>
-              <div className="modal-actions">
-                <button className="secondary" onClick={closeDialog}>
-                  保留标定
-                </button>
-                <button
-                  className="primary"
-                  disabled={Boolean(state.pending)}
-                  onClick={() => {
-                    void store.calibrate({ frame: state.frame, clear: true });
-                    closeDialog();
-                  }}
-                >
-                  确认清除
-                </button>
-              </div>
-            </>
-          ) : dialog.kind === "push" ? (
-            <>
-              <dl className="confirmation-details">
-                <dt>目标主机</dt>
-                <dd>
-                  {dialog.request.host}:{dialog.request.port}
-                </dd>
-                <dt>目标目录</dt>
-                <dd>{dialog.request.remote_dir}</dd>
-                <dt>程序文件</dt>
-                <dd>
-                  {/\.ls$/i.test(dialog.name)
-                    ? dialog.name
-                    : dialog.name + ".ls"}
-                </dd>
-                <dt>帧 / 焊缝</dt>
-                <dd>
-                  {dialog.request.frame} / {seamLabel(dialog.request.seam_id)}
-                </dd>
-              </dl>
-              <Notice warning>
-                同名程序将被覆盖。只传输文件，不触发电机启动；程序选择与循环启动必须在示教器上人工确认。
-              </Notice>
-              {mode === "demo" && (
-                <Notice>当前是浏览器模拟，确认后不会建立真实 FTP 连接。</Notice>
-              )}
-              <div className="modal-actions">
-                <button className="secondary" onClick={closeDialog}>
-                  返回检查
-                </button>
-                <button
-                  className="primary"
-                  onClick={() => {
-                    if (
-                      state.frame !== dialog.request.frame ||
-                      state.selected !== dialog.request.seam_id
-                    ) {
-                      store.notify("帧或焊缝已改变，请重新确认", "warn");
-                      closeDialog();
-                      return;
-                    }
-                    void store.push(dialog.request);
-                    closeDialog();
-                  }}
-                >
-                  {mode === "demo" ? "确认模拟下发" : "确认传输文件"}
-                </button>
-              </div>
-            </>
-          ) : dialog.kind === "settings" ? (
-            <>
-              <p>
-                当前模式：
-                {mode === "demo" ? "浏览器离线演示" : "FastAPI 后端接口"}
-                。切换模式将开启新的前端会话，保留非敏感 FTP 连接设置。
-              </p>
-              <div className="mode-options">
-                <button
-                  className={mode === "demo" ? "chosen" : ""}
-                  disabled={Boolean(state.activeTask || state.pending)}
-                  onClick={() => onMode("demo")}
-                >
-                  <Box />
-                  <strong>离线演示</strong>
-                  <small>模拟接口、固定点云；不连接设备</small>
-                </button>
-                <button
-                  className={mode === "live" ? "chosen" : ""}
-                  disabled={Boolean(state.activeTask || state.pending)}
-                  onClick={() => onMode("live")}
-                >
-                  <Radio />
-                  <strong>后端模式</strong>
-                  <small>同源 /api，连接既有 FastAPI</small>
-                </button>
-              </div>
-              {Boolean(state.activeTask || state.pending) && (
-                <Notice warning>任务或提交进行中，请完成后再切换模式。</Notice>
-              )}
-              <Notice>
-                后端地址通过 BACKEND_ORIGIN 设置，默认
-                127.0.0.1:8000。接口失败会明确提示，不会自动切换成模拟成功。
-              </Notice>
-              <button
-                className="secondary wide"
-                onClick={() => void store.retry()}
-              >
-                <RotateCcw size={15} />
-                刷新健康状态与当前帧
-              </button>
-            </>
-          ) : (
-            <>
-              <p>
-                使用三维点云完成采集、识别、标定、程序生成、TCP
-                预演与文件下发。所有几何单位均为毫米，预演使用相机系坐标。
-              </p>
-              <Notice>
-                {mode === "demo"
-                  ? "当前点云、任务、标定及程序均为浏览器模拟；上传内容不会被推理。"
-                  : "当前通过同源 /api 请求既有后端。后端负责推理、标定、程序生成及 FTP。"}
-              </Notice>
-              <p>
-                真机程序选择与启动须在示教器上人工确认：T1 倍率不高于
-                10%、单段模式、手不离急停。
-              </p>
-              <button className="primary wide" onClick={closeDialog}>
-                我已了解
-              </button>
-            </>
-          )}
-        </Modal>
-      )}
-    </div>
+          </Modal>
+        )}
+      </div>
+    </PdfStage>
   );
 }

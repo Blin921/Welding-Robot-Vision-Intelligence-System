@@ -1,7 +1,7 @@
 import { DemoApi } from "../demo-api";
 import { ApiError, HttpApi } from "../api";
 import { parsePcdFile } from "./parse-file";
-import { loadReferenceView, renameView } from "./reference-cloud";
+import { demoCloud, demoSeams } from "../demo-data";
 import type { Frame } from "../types";
 export const ACQUISITION_FRAMES: Frame[] = [
   "dataset",
@@ -33,7 +33,7 @@ export class AcquisitionDemoApi extends DemoApi {
     if (preview) return preview;
     if (!this.frameData.some((f) => f.id === frame))
       throw new ApiError(404, "帧不存在");
-    return renameView(await loadReferenceView(), frame);
+    return demoCloud();
   }
   override async seams(frame: string) {
     const status = await this.calibration(frame);
@@ -41,7 +41,7 @@ export class AcquisitionDemoApi extends DemoApi {
       frame,
       calib_tag: status.calib_tag,
       uncalibrated: status.uncalibrated,
-      seams: [],
+      seams: this.previews.has(frame) ? [] : demoSeams(),
       primitives: [],
     };
   }

@@ -50,9 +50,9 @@ const fs = require("node:fs");
     ])
       await btn(n).click();
     await btn("测量点间距离").click();
-    await p.mouse.click(800, 420);
-    await p.mouse.click(850, 380);
-    await expect(p.getByText(/示例距离/)).toBeVisible();
+    await p.mouse.click(750, 460);
+    await p.mouse.click(850, 480);
+    await expect(p.getByText(/^距离：/)).toBeVisible();
     await btn("清除测量").click();
     await btn("全屏预览").click();
     await expect
@@ -81,13 +81,11 @@ const fs = require("node:fs");
     await p.locator("canvas").waitFor();
     const text =
       "VERSION .7\nFIELDS x y z rgb instance\nSIZE 4 4 4 4 2\nTYPE F F F U U\nWIDTH 3\nHEIGHT 1\nPOINTS 3\nDATA ascii\n-50 0 0 16711680 1\n0 50 0 65280 2\n50 0 50 255 3\n";
-    await p
-      .getByLabel("选择 PCD 文件", { exact: true })
-      .setInputFiles({
-        name: "browser_upload.pcd",
-        mimeType: "application/octet-stream",
-        buffer: Buffer.from(text),
-      });
+    await p.getByLabel("选择 PCD 文件", { exact: true }).setInputFiles({
+      name: "browser_upload.pcd",
+      mimeType: "application/octet-stream",
+      buffer: Buffer.from(text),
+    });
     await expect(
       p.getByText("browser_upload.pcd", { exact: true }).first(),
     ).toBeVisible();
@@ -106,13 +104,11 @@ const fs = require("node:fs");
         .includes(Buffer.from("DATA binary"))
     )
       throw Error("Export failed");
-    await p
-      .getByLabel("选择 PCD 文件", { exact: true })
-      .setInputFiles({
-        name: "broken.pcd",
-        mimeType: "application/octet-stream",
-        buffer: Buffer.from("invalid"),
-      });
+    await p.getByLabel("选择 PCD 文件", { exact: true }).setInputFiles({
+      name: "broken.pcd",
+      mimeType: "application/octet-stream",
+      buffer: Buffer.from("invalid"),
+    });
     await expect(p.getByText(/缺少 DATA/).first()).toBeVisible();
     await btn("系统设置").click();
     await expect(p.getByRole("dialog")).toBeVisible();

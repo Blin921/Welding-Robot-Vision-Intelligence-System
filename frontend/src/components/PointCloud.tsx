@@ -29,6 +29,11 @@ interface Props {
   interaction?: "orbit" | "pan";
   zoom?: number;
   calibrationPairs?: PointPair[];
+  hidden?: boolean;
+  bounds?: boolean;
+  projection?: "perspective" | "orthographic";
+  measuring?: boolean;
+  onPointPick?: (point: Vec3) => void;
 }
 interface Controls {
   update: (props: Props) => void;
@@ -56,7 +61,17 @@ export default function PointCloud(props: Props) {
       root = new THREE.Group();
     root.scale.set(1, -1, 1);
     scene.add(root);
-    const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100000);
+    const perspective = new THREE.PerspectiveCamera(38, 1, 0.1, 100000);
+    const orthographic = new THREE.OrthographicCamera(
+      -1,
+      1,
+      1,
+      -1,
+      0.1,
+      100000,
+    );
+    let camera: THREE.PerspectiveCamera | THREE.OrthographicCamera =
+      perspective;
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     el.appendChild(renderer.domElement);
     const orbit = new OrbitControls(camera, renderer.domElement);
@@ -75,11 +90,14 @@ export default function PointCloud(props: Props) {
       ) / 2,
     );
     const fit = () => {
-      const fov = THREE.MathUtils.degToRad(camera.fov);
+      const fov = THREE.MathUtils.degToRad(perspective.fov);
       const distance =
         (radius /
           Math.sin(
-            Math.min(fov, 2 * Math.atan(Math.tan(fov / 2) * camera.aspect)) / 2,
+            Math.min(
+              fov,
+              2 * Math.atan(Math.tan(fov / 2) * perspective.aspect),
+            ) / 2,
           )) *
         (interactive ? 0.68 : 0.58);
       const target = center.clone();
@@ -159,7 +177,8 @@ export default function PointCloud(props: Props) {
       `,
         );
     };
-    root.add(new THREE.Points(geometry, material));
+    const points = new THREE.Points(geometry, material);
+    root.add(points);
     const gridSize = Math.ceil((radius * 1.8) / 10) * 10;
     const grid = new THREE.GridHelper(
       gridSize,
@@ -274,7 +293,65 @@ export default function PointCloud(props: Props) {
     let lastMode = "语义",
       lastZoom = 0,
       lastSelected: number | null = null;
+    let boundsHelper: THREE.BoxHelper | undefined;
+    let pickHandler: Props["onPointPick"];
+    let measuring = false;
+    let dragStart = { x: 0, y: 0 };
+    const pointerDown = (event: PointerEvent) => {
+      dragStart = { x: event.clientX, y: event.clientY };
+    };
+    const pick = (event: MouseEvent) => {
+      if (
+        !measuring ||
+        !pickHandler ||
+        !points.visible ||
+        Math.hypot(event.clientX - dragStart.x, event.clientY - dragStart.y) > 5
+      )
+        return;
+      const rect = renderer.domElement.getBoundingClientRect();
+      const ray = new THREE.Raycaster();
+      ray.params.Points.threshold = radius * 0.014;
+      ray.setFromCamera(
+        new THREE.Vector2(
+          ((event.clientX - rect.left) / rect.width) * 2 - 1,
+          (-(event.clientY - rect.top) / rect.height) * 2 + 1,
+        ),
+        camera,
+      );
+      const hit = ray.intersectObject(points, false)[0];
+      if (hit?.index !== undefined)
+        pickHandler(
+          Array.from(
+            cloud.xyz.subarray(hit.index * 3, hit.index * 3 + 3),
+          ) as Vec3,
+        );
+    };
+    renderer.domElement.addEventListener("pointerdown", pointerDown);
+    renderer.domElement.addEventListener("click", pick);
     const update = (p: Props) => {
+      const nextCamera =
+        p.projection === "orthographic" ? orthographic : perspective;
+      if (nextCamera !== camera) {
+        nextCamera.position.copy(camera.position);
+        nextCamera.quaternion.copy(camera.quaternion);
+        nextCamera.near = camera.near;
+        nextCamera.far = camera.far;
+        camera = nextCamera;
+        orbit.object = camera;
+        camera.updateProjectionMatrix();
+        orbit.update();
+      }
+      root.visible = !p.hidden;
+      points.visible = !p.hidden;
+      if (p.bounds && !boundsHelper) {
+        boundsHelper = new THREE.BoxHelper(points, 0x637587);
+        scene.add(boundsHelper);
+      }
+      if (boundsHelper) boundsHelper.visible = Boolean(p.bounds && !p.hidden);
+      pickHandler = p.onPointPick;
+      measuring = Boolean(p.measuring);
+      orbit.enabled = interactive && !measuring;
+
       if (previousPairs !== p.calibrationPairs || annotationLight !== p.light) {
         clearAnnotations();
         previousPairs = p.calibrationPairs;
@@ -418,7 +495,12 @@ export default function PointCloud(props: Props) {
         height = el.clientHeight;
       if (!width || !height) return;
       renderer.setSize(width, height);
-      camera.aspect = width / height;
+      perspective.aspect = width / height;
+      const halfHeight = radius * 0.68;
+      orthographic.left = -halfHeight * perspective.aspect;
+      orthographic.right = halfHeight * perspective.aspect;
+      orthographic.top = halfHeight;
+      orthographic.bottom = -halfHeight;
       camera.updateProjectionMatrix();
       for (const l of lines.values()) l.material.resolution.set(width, height);
       travelled.material.resolution.set(width, height);
@@ -446,6 +528,8 @@ export default function PointCloud(props: Props) {
       controller.current = null;
       observer.disconnect();
       orbit.dispose();
+      renderer.domElement.removeEventListener("pointerdown", pointerDown);
+      renderer.domElement.removeEventListener("click", pick);
       renderer.domElement.removeEventListener("webglcontextlost", contextLost);
       clearAnnotations();
       scene.traverse((object) => {

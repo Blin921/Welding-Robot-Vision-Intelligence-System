@@ -119,7 +119,7 @@ export default function AcquisitionPage({
   const [scale, setScale] = useState(1),
     [scan, setScan] = useState<ScanRequest>(DEFAULT_SCAN),
     [colorMode, setColorMode] = useState<"semantic" | "instance">("semantic"),
-    [pointSize, setPointSize] = useState(4),
+    [pointSize, setPointSize] = useState(2),
     [hidden, setHidden] = useState(false),
     [bounds, setBounds] = useState(false),
     [tool, setTool] = useState<"rotate" | "pan" | "measure">("rotate"),
@@ -259,7 +259,7 @@ export default function AcquisitionPage({
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 0);
     setUploadMenu(false);
-    store.notify("当前视图已导出；参考图示例不是原始 PCD", "info");
+    store.notify("当前显示点云已导出", "info");
   }
   async function fullscreen() {
     try {
@@ -348,7 +348,7 @@ export default function AcquisitionPage({
             aria-label="模型状态"
             title={
               mode === "demo"
-                ? "参考图示例资源已就绪；不是实际模型推理状态"
+                ? "离线演示，不加载真实模型"
                 : (state.health?.model_error ??
                   (state.health?.model_ok ? "模型已就绪" : "模型未加载"))
             }
@@ -395,7 +395,7 @@ export default function AcquisitionPage({
             aria-label="当前帧标定状态"
             title={
               mode === "demo"
-                ? "参考图指示灯；当前帧实际标定状态见右侧信息"
+                ? "当前帧实际标定状态见右侧信息"
                 : state.calibration?.has_calib
                   ? "当前帧已标定"
                   : "当前帧未标定"
@@ -851,12 +851,12 @@ export default function AcquisitionPage({
                 id="acquisition-point-size"
                 style={
                   {
-                    "--progress": `${((pointSize - 1) / 7) * 100}%`,
+                    "--progress": `${((pointSize - 1) / 5) * 100}%`,
                   } as CSSProperties
                 }
                 type="range"
                 min={1}
-                max={8}
+                max={6}
                 step={1}
                 value={pointSize}
                 onChange={(event) => setPointSize(Number(event.target.value))}
@@ -978,11 +978,7 @@ export default function AcquisitionPage({
             <button
               aria-label="测量点间距离"
               aria-pressed={tool === "measure"}
-              title={
-                cloud?.header.source === "reference-image"
-                  ? "参考图重建示例；距离不是原始工件的真实物理尺寸"
-                  : "点击两个点，测量毫米距离；Esc 结束"
-              }
+              title={"点击两个点，测量毫米距离；Esc 结束"}
               onClick={() => {
                 setTool(tool === "measure" ? "rotate" : "measure");
                 cloudRef.current?.clearMeasurement();
@@ -1000,9 +996,6 @@ export default function AcquisitionPage({
                     ? "请选择第二个点"
                     : "请选择第一个点"}
               </strong>
-              {cloud?.header.source === "reference-image" && (
-                <span>参考图可见点重建，不能作为真实工件测量依据。</span>
-              )}
               <button
                 aria-label="清除测量"
                 onClick={() => cloudRef.current?.clearMeasurement()}
@@ -1043,16 +1036,7 @@ export default function AcquisitionPage({
                   state.calibration?.has_calib ? "已标定" : "未标定",
                 ],
               ].map(([label, value], index) => (
-                <div
-                  className={styles.infoCell}
-                  key={label}
-                  title={
-                    label === "点云数量" &&
-                    cloud?.header.source === "reference-image"
-                      ? "参考图示例：286742 个重建显示点，并非原始 PCD"
-                      : value
-                  }
-                >
+                <div className={styles.infoCell} key={label} title={value}>
                   <span>{label}</span>
                   <strong className={index === 2 ? styles.number : ""}>
                     {value}
@@ -1377,9 +1361,8 @@ export default function AcquisitionPage({
                     </button>
                   </div>
                   <p>
-                    离线示例使用从参考图可见像素重建的点云，不是原始
-                    PCD。原始工件被遮挡的结构和真实物理尺寸无法从单张图片恢复。上传的
-                    PCD 会实际解析并显示。
+                    离线示例与其他页面共用原有三维演示点云和渲染器。上传的 PCD
+                    会实际解析并显示。
                   </p>
                   <p>
                     真实后端通过同源 /api 连接
