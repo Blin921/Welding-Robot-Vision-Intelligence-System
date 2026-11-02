@@ -23,6 +23,7 @@ export interface CloudHandle {
 }
 interface Props {
   cloud: CloudData;
+  light: boolean;
   mode: "semantic" | "instance";
   size: number;
   hidden: boolean;
@@ -85,7 +86,7 @@ export default forwardRef<CloudHandle, Props>(
         cloud={props.cloud}
         seams={state.seams}
         selected={state.selected}
-        light
+        light={props.light}
         mode={props.mode === "semantic" ? "语义" : "实例"}
         size={props.size}
         reset={reset}

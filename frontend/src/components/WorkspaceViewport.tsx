@@ -1,5 +1,6 @@
 "use client";
 import dynamic from "next/dynamic";
+import ProcessPresentation from "./ProcessPresentation";
 import {
   Activity,
   Box,
@@ -176,6 +177,7 @@ function Viewport({
           </button>
         </div>
         <div className="main-cloud">
+          <ProcessPresentation key={tab} stage={tab} light={light} active={tab !== 1} />
           {state.loading ? (
             <div className="cloud-loading">
               <LoaderCircle className="spin" />

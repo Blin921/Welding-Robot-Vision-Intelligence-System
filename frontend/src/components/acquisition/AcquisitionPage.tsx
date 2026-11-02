@@ -8,7 +8,7 @@ import {
   type CSSProperties,
 } from "react";
 import {
-  Box,
+  Box, Sun, Moon,
   Home, ScanLine, Crosshair, Layers3, Workflow, Send, Settings2, UserRound, SlidersHorizontal, Activity,
   ChevronDown,
   ChevronUp,
@@ -30,6 +30,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
+import ProcessPresentation from "../ProcessPresentation";
 import BrandMark from "../BrandMark";
 import { useWorkspace } from "../../stores/provider";
 import {
@@ -119,11 +120,14 @@ function numberValue(value: number) {
 export default function AcquisitionPage({
   onNavigate,
   onMode,
-  mode,
+  mode, light, onTheme, active,
 }: {
   onNavigate: (page: number) => void;
   onMode: (mode: AppMode) => void;
   mode: AppMode;
+  light: boolean;
+  onTheme: () => void;
+  active: boolean;
 }) {
   const { state, store } = useWorkspace();
   const outer = useRef<HTMLDivElement>(null),
@@ -300,7 +304,7 @@ export default function AcquisitionPage({
   return (
     <div
       ref={outer}
-      className={styles.screen}
+      className={`${styles.screen} ${light ? "" : styles.dark}`}
       data-acquisition-screen
       onDragOver={(event) => {
         if (event.dataTransfer.types.includes("Files")) {
@@ -437,6 +441,7 @@ export default function AcquisitionPage({
               <span>后端模式</span>
             )}
           </button>
+          <button className={styles.themeButton} aria-label="切换深浅主题" onClick={onTheme} title={light ? "切换暗色" : "切换浅色"}>{light ? <Moon size={17} /> : <Sun size={17} />}</button>
           <button
             className={styles.settingsButton}
             aria-label="系统设置"
@@ -896,10 +901,12 @@ export default function AcquisitionPage({
             </button>
           </div>
           <div className={styles.cloudLayer}>
+            <ProcessPresentation stage={1} light={light} active={active} />
             {cloud && !state.loading ? (
               <CloudViewport
                 ref={cloudRef}
                 cloud={cloud}
+                light={light}
                 mode={colorMode}
                 size={pointSize}
                 hidden={hidden}

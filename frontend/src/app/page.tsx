@@ -105,6 +105,21 @@ function Workspace({
     [compactPanel, setCompactPanel] = useState<"workflow" | "context">(
       "workflow",
     );
+  const toggleTheme = useCallback(() => {
+    setLight(previous => {
+      const next = !previous;
+      try { localStorage.setItem("weld-theme", next ? "light" : "dark"); } catch {}
+      return next;
+    });
+  }, []);
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      try { const saved = localStorage.getItem("weld-theme"); if (saved === "dark" || saved === "light") setLight(saved === "light"); } catch {}
+    });
+    return () => { active = false; };
+  }, []);
   const [calibrationDrafts, setCalibrationDrafts] = useState<
     Record<string, Pick<Forms, "pairs" | "matrix" | "calibMode">>
   >({});
@@ -306,7 +321,7 @@ function Workspace({
   return (
     <>
       <div hidden={tab !== 1} data-pane="acquisition">
-        <AcquisitionPage onNavigate={go} onMode={onMode} mode={mode} />
+        <AcquisitionPage onNavigate={go} onMode={onMode} mode={mode} light={light} onTheme={toggleTheme} active={tab === 1} />
       </div>
       <div hidden={tab === 1} data-pane="workbench">
     <PdfStage>
@@ -432,7 +447,7 @@ function Workspace({
             <button
               title="切换深浅主题"
               aria-label="切换深浅主题"
-              onClick={() => setLight(!light)}
+              onClick={toggleTheme}
             >
               {light ? <Moon /> : <Sun />}
             </button>

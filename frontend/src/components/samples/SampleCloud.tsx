@@ -105,5 +105,5 @@ export default function SampleCloud(props: Props) {
     return()=>{cancelAnimationFrame(raf);observer.disconnect();orbit.dispose();fitView.current=null;
       const disposedGeometries=new Set<THREE.BufferGeometry>(),disposedMaterials=new Set<THREE.Material>();scene.traverse(o=>{const item=o as THREE.Mesh;if(item.geometry&&!disposedGeometries.has(item.geometry)){item.geometry.dispose();disposedGeometries.add(item.geometry);}if(item.material){for(const m of Array.isArray(item.material)?item.material:[item.material])if(!disposedMaterials.has(m)){m.dispose();disposedMaterials.add(m);}}});renderer.dispose();renderer.domElement.remove();};
   }, []);
-  return <div className="sample-cloud" ref={host} aria-label="三维过程动画样板，可拖动旋转和滚轮缩放">{failed&&<div className="sample-webgl-error">浏览器无法启用三维渲染，请启用硬件加速后刷新。</div>}</div>;
+  return <div className="sample-cloud" ref={host} aria-label="三维流程示意，可拖动旋转和滚轮缩放">{failed&&<div className="sample-webgl-error">浏览器无法启用三维渲染，请启用硬件加速后刷新。</div>}</div>;
 }

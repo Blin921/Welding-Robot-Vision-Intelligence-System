@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./pdf-layout.css";
+import "./process.css";
 export const metadata: Metadata = {
   title: "焊接机器人视觉识别系统 · 机器人视觉工作台",
   description: "焊接机器人视觉智能系统 · 离线交互演示",

@@ -14,6 +14,7 @@ import {
 import { useMemo } from "react";
 import { parseView } from "../lib/blob";
 import { demoCloud, demoSeams } from "../lib/demo-data";
+import ProcessPresentation from "./ProcessPresentation";
 import FeatureArt from "./FeatureArt";
 const Cloud = dynamic(() => import("./PointCloud"), { ssr: false });
 export default function Overview({
@@ -52,7 +53,8 @@ export default function Overview({
             </button>
           </div>
         </div>
-        <div className="hero-cloud" aria-label="首页静态三维展示">
+        <div className="hero-cloud" aria-label="首页三维流程展示">
+          <ProcessPresentation stage={0} light={light} />
           <Cloud
             cloud={cloud}
             seams={seams}
@@ -154,3 +156,4 @@ export default function Overview({
     </main>
   );
 }
+

@@ -1597,3 +1597,65 @@
   .viewport { grid-row: 3; }
   .footer { grid-row: 4; overflow: auto; }
 }
+
+/* Compact sidebars; preserve full-resolution rendering in the centre. */
+.stage { grid-template-columns: 248px minmax(0, 1fr) 260px; }
+.leftColumn .nativeHeading, .rightColumn .nativeHeading { font-size: 16px; }
+.scanField { grid-template-columns: 94px minmax(0, 1fr); }
+.scanField > span, .scanField > input, .distance input, .distance input:last-child { font-size: 14px; }
+.selectFrame { grid-template-columns: 14px minmax(0, 1fr) 52px 40px; gap: 3px; }
+.frameName { font-size: 13px; }
+.sourceLabel, .resultBadge { font-size: 12px; }
+.sourceLabel svg { width: 11px; height: 11px; }
+.infoCell > span { font-size: 12px; }
+.infoCell > strong { font-size: 14px; }
+.mutex > strong { font-size: 13px; }
+.themeButton { position: relative; width: 26px; height: 30px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; color: inherit; }
+.dark { color-scheme: dark; --panel: #14212b; --border: #293d4b; --text: #e6edf3; --muted: #8fa5b4; --input: #1b2c38; --orange: #f18b3e; background: #0b1218; color: var(--text); }
+.dark .stage { background: #0b1218; }
+.dark .header, .dark .panel, .dark .footer { background: #14212b; border-color: var(--border); color: var(--text); box-shadow: 0 4px 16px #0002; }
+.dark .panelHeading, .dark .dataPanel > .panelHeading { background: #172b38; color: var(--text); }
+.dark .nativeHeading, .dark .brand, .dark .navButton { color: var(--text); }
+.dark .navButton[aria-current="page"] { color: var(--orange); }
+.dark input, .dark select, .dark .uploadMain, .dark .uploadArrow, .dark .loadedFile,
+.dark .healthModel, .dark .healthCpp, .dark .healthCalib, .dark .demoButton,
+.dark .infoCell, .dark .squareButton, .dark .resetButton,
+.dark .colorButtons > button, .dark .switchField { background: var(--input); color: var(--text); border-color: var(--border); }
+.dark .colorButtons > button[aria-pressed="true"] { background: #dc701e; color: white; }
+.dark .viewport { background: radial-gradient(ellipse at 45% 40%, #10202b, #0b151e); }
+.dark .frameRow, .dark .frameRow:first-child { background: transparent; border-color: transparent; }
+.dark .frameRow[aria-selected="true"] { background: #3b3026; border-color: #a16635; }
+.dark .frameName, .dark .infoCell > strong, .dark .mutex > strong { color: var(--text); }
+.dark .sourceLabel, .dark .infoCell > span, .dark .nativeFooterMode { color: var(--muted); }
+.dark .resultBadge { background: #204d3b; color: #91dab2; }
+.dark .logs, .dark .legend, .dark .viewportTools { background: #0e1922eb; color: var(--text); border-color: var(--border); }
+.dark .logsEmpty, .dark .logRow, .dark .viewportStatus, .dark .logTitle { color: var(--muted); }
+.dark .viewportStatus { background: #14212b; border-color: var(--border); }
+.dark .modal, .dark .uploadMenu { background: var(--panel); color: var(--text); border-color: var(--border); }
+@media (max-width: 1199px) and (min-width: 701px) { .stage { grid-template-columns: 232px minmax(0, 1fr); } }
+@media (max-width: 700px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+@media (min-width: 1451px) and (max-width: 1650px) { .navButton .sprite { font-size: 14px; gap: 4px; } .header .navButton { padding-inline: 4px; } .healthModel .sprite, .healthCpp .sprite, .healthCalib .sprite { font-size: 12px; } }
+
+.cloudLayer:has(:global(.process-presentation)) { z-index: 9; }
+.dark .selectedRow, .dark .frameRow.selectedRow:first-child { background: #3b3026; border-color: #a16635; }
+.dark .dialog, .dark .menu, .dark .taskDrawer { background: var(--panel); color: var(--text); border-color: var(--border); }
+.dark .emptyLog { color: var(--muted); }
+.header .themeButton { position: relative; inset: auto; width: 26px; height: 30px; flex-shrink: 0; }
+/* Native labels no longer need the old reference-image blending. */
+.dark .sprite { mix-blend-mode: normal; color: var(--muted); }
+.dark .header .sprite, .dark .brand .sprite, .dark .panelHeading .sprite { mix-blend-mode: normal; color: var(--text); }
+.dark .navButton[aria-current="page"] .sprite { color: var(--orange); }
+.dark .darkHeading { background: #243b49 !important; }
+.dark .uploadMain, .dark .uploadArrow, .dark .healthModel, .dark .healthCpp, .dark .healthCalib,
+.dark .colorButtons > button, .dark .resetButton, .dark .squareButton { background: var(--input) !important; border-color: var(--border) !important; color: var(--text) !important; }
+.dark .colorButtons > button.active { background: #d97022 !important; color: white !important; border-color: #d97022 !important; }
+.dark .scanField, .dark .progress > strong, .dark .pointControl output,
+.dark .frameListHeading, .dark .frameListHeading > button, .dark .footerRight > button,
+.dark .footerRight > button > span { color: var(--text); }
+.dark .pointControl output, .dark .footerRight > button > span { background: var(--input); border-color: var(--border); }
+.dark .viewportTools > button { color: var(--text) !important; }
+.dark .viewportTools > button[aria-pressed="true"] { color: #f3a664 !important; }
+.dark .scanSettings > .panelHeading .sprite, .dark .logTitle .sprite { mix-blend-mode: normal; color: var(--text); }
+.dark .terminal { background: #0c1821; color: var(--text); border-color: var(--border); }
+.dark .sprite { mix-blend-mode: normal !important; }
+.dark .nativeHeading { color: var(--text); }

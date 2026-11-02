@@ -267,6 +267,7 @@ export default function PointCloud(props: Props) {
           ? object.material
           : [object.material];
         materials.forEach((material) => {
+          material.transparent = true;
           material.depthTest = false;
           material.depthWrite = false;
         });

@@ -872,3 +872,49 @@ html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background:
 .pdf-app .tcp-cells strong { font-size: 20px; }
 .pdf-app .coordinate-pair { gap: 6px; margin-top: 8px; }
 .pdf-app .coordinate-pair p { font-size: 14px; margin: 5px 0 0; }
+
+/* Give the point cloud the largest share without shrinking the canvas or text by transforms. */
+.pdf-app .workspace[class] { grid-template-columns: 248px minmax(0, 1fr) 260px; }
+.pdf-app .left-column .panel-title, .pdf-app .right-column .panel-title,
+.pdf-app .left-column .panel-collapse, .pdf-app .right-column .panel-collapse { font-size: 16px; }
+.pdf-app .left-column .field { grid-template-columns: 89px minmax(0, 1fr); gap: 4px; }
+.pdf-app .left-column .field > span, .pdf-app .left-column input, .pdf-app .left-column select,
+.pdf-app .left-column .switch-row, .pdf-app .right-column .detail-list { font-size: 14px; }
+.pdf-app .left-column .notice, .pdf-app .right-column .notice, .pdf-app .left-column .hint, .pdf-app .right-column .hint { font-size: 13px; }
+.pdf-app .header-tools > button[aria-label="切换深浅主题"] { display: inline-flex; }
+/* Status cards size to content. The previous fixed 150px clipped the second row. */
+.pdf-app .page-3 .right-column > .panel:first-child { flex: 0 0 auto; overflow: visible; }
+.pdf-app .stats.calibration-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+.pdf-app .calibration-stats > div { min-height: 44px; padding: 5px 6px; }
+.pdf-app .calibration-stats small { font-size: 12px; }
+.pdf-app .calibration-stats strong { font-size: 17px; }
+.pdf-app .calibration-stats strong.text-value { font-size: 14px; }
+.pdf-app .calibration-state { margin-bottom: 7px; font-size: 14px; }
+.pdf-app .page-3 .right-column > .panel:nth-child(2) { flex: 0 0 auto; }
+.pdf-app .page-3 .matrix-placeholder > span { padding: 4px 1px; font-size: 11px; }
+.pdf-app .page-3 .right-column > .panel:last-child > .panel-body { height: calc(100% - 34px); }
+.pdf-app .right-column .endpoint { font-size: 13px; }
+.pdf-app .right-column .endpoint p, .pdf-app .right-column .seam-geometry { font-size: 13px; }
+.pdf-app .right-column .coordinate-pair { grid-template-columns: minmax(0, 1fr); }
+.pdf-app .right-column .tcp-cells strong { font-size: 17px; }
+.pdf-app.app:not(.light) { color-scheme: dark; --bg: #0b1218; --panel: #14212b; --panel-deep: #0e1922; --text: #e6edf3; --muted: #8fa5b4; --border: #293d4b; --input: #1b2c38; --soft: #1b2c38; --heading: #172631; --orange: #f18b3e; --orange-bg: #402d21; background: #0b1218; }
+.pdf-app:not(.light) .panel, .pdf-app:not(.light) .topbar { background: #14212b; border-color: var(--border); }
+.pdf-app:not(.light) .viewer { background: radial-gradient(ellipse at 45% 40%, #10202b, #0b151e); }
+.pdf-app:not(.light) .health > span, .pdf-app:not(.light) .demo-tag,
+.pdf-app:not(.light) .cloud-tools, .pdf-app:not(.light) .legend,
+.pdf-app:not(.light) .seam-card, .pdf-app:not(.light) .pair,
+.pdf-app:not(.light) .logs-panel .log-list, .pdf-app:not(.light) .log-list,
+.pdf-app:not(.light) .seam-geometry, .pdf-app:not(.light) .endpoint,
+.pdf-app:not(.light) .tcp-cells > div, .pdf-app:not(.light) .coordinate-pair > div,
+.pdf-app:not(.light) .playback-controls, .pdf-app:not(.light) .program-preview-tabs,
+.pdf-app:not(.light) .task-center { background: var(--panel-deep); color: var(--text); border-color: var(--border); }
+.pdf-app:not(.light) .panel-title { background: transparent; color: var(--text); }
+.pdf-app:not(.light) .panel-title.featured { background: #243b49; }
+.pdf-app:not(.light) .pair.active, .pdf-app:not(.light) .seam-card.selected { background: #3b3026; border-color: #a16635; }
+.pdf-app:not(.light) .geometry-seam-heading { background: #233949; }
+.pdf-app:not(.light) .viewer-toolbar button { color: var(--text); }
+.pdf-app:not(.light) .viewer-toolbar button.active { color: white; }
+.pdf-app:not(.light) .code-preview { background: #09141c; }
+@media (max-width: 1199px) and (min-width: 701px) { .pdf-app .workspace[class] { grid-template-columns: 232px minmax(0, 1fr); } }
+@media (max-width: 700px) { .pdf-app .workspace[class] { grid-template-columns: minmax(0, 1fr); } }
+@media (min-width: 1451px) and (max-width: 1650px) { .pdf-app .topbar nav > button { font-size: 14px; padding-inline: 4px; gap: 4px; } .pdf-app .health > span { font-size: 12px; } }
