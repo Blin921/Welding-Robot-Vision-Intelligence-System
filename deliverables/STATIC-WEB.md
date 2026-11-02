@@ -1,15 +1,12 @@
-# 静态网页版
+# 单文件静态网页版
 
-[下载静态网页 ZIP](./welding-vision-static-5ea057a.zip)
+下载后双击 **Welding-Vision.html** 即可用浏览器打开。
 
-对应正式版源码：`5ea057a2c367da5bc015924c2e3a55e069afc6e5`。
+- [下载 HTML 文件](https://github.com/Blin921/Welding-Robot-Vision-Intelligence-System/raw/refs/heads/main/deliverables/Welding-Vision.html?download=1)
+- [下载 ZIP（只含一个 HTML 文件）](./welding-vision-single-html.zip)
 
-解压整个压缩包，进入 Welding-Vision-Static 文件夹，双击 `Start-Static.cmd`。使用电脑上现有的 Node.js，无需 npm install、编译、Next.js 或 FastAPI。浏览器自动打开 **http://127.0.0.1:8765**，保持启动窗口打开即可。端口被占用时运行 `node serve-static.cjs 8766`。
+不需要 CMD、启动脚本、Node.js、本地服务或联网。若直接下载 HTML 时浏览器显示源码，可用“另存为”保存为 .html，或下载 ZIP 后解压双击 HTML。
 
-包含七页正式界面、明暗主题、三维点云交互和七套流程示意动画。HTML、CSS、JavaScript、Logo 和演示数据已全部包含，无需外部 CDN。可将静态文件部署至静态服务器根目录；请通过 HTTP 打开，不要直接双击 index.html。
+包含当前正式版七页界面、明暗主题、三维点云预览、流程示意动画和本地 PCD 导入。Logo、样例数据、CSS、JavaScript 与 PCD 解析程序均已内嵌。
 
-默认浏览器演示模式。真实相机采集、模型识别和机器人传输需要原后端；静态文件本身不提供 /api 代理，连接后端时需另行配置反向代理。
-
-验证：静态导出构建通过；七页动画、两套主题、播放控制、自动采集示意和四种尺寸下标定状态完整显示通过；无页面错误、无缺失资源、无外部资源依赖、无业务 API 请求；样板页和返回正式工作台导航通过。ZIP 完整性检查通过，共 52 个文件，1,513,018 字节。
-
-SHA-256：`b1620481b95a6b437e14f5ed052cffe30ff07d3a046a073df8785586a269b6e3`
+使用浏览器演示数据，不连接真实设备。正式版源码对应提交：5ea057a2c367da5bc015924c2e3a55e069afc6e5。
