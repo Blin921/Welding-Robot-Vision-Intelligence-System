@@ -22,7 +22,7 @@ import { createPortal } from "react-dom";
 import type { PointPair } from "../lib/types";
 import { useWorkspace } from "../stores/provider";
 import { Notice, Panel } from "./ui";
-import { Playback, usePlayback } from "./Playback";
+import { usePlayback } from "./Playback";
 const Cloud = dynamic(() => import("./PointCloud"), {
   ssr: false,
   loading: () => (
@@ -84,7 +84,7 @@ function Viewport({
   }, [tab]);
   const viewer = useRef<HTMLDivElement>(null);
   const generated = store.currentProgram(),
-    playback = usePlayback(generated?.data ?? null, tab === 5),
+    playback = usePlayback(generated?.data ?? null, false),
     cloud = state.cloud,
     push = store.currentPush();
   const headings = [
@@ -193,7 +193,7 @@ function Viewport({
               size={size}
               reset={reset}
               grid={grid}
-              tcp={tab === 5 ? playback.pose : null}
+              tcp={null}
               tcpPath={generated?.data.waypoints_cam_mm}
               calibrationPairs={tab === 3 ? calibrationPairs : undefined}
               interaction={interaction}
@@ -301,20 +301,7 @@ function Viewport({
             </div>
           )}
         </div>
-        {tab === 5 && (
-          <>
-            <Playback
-              playback={playback}
-              enabled={Boolean(generated && cloud && playback.timeline.length)}
-            />
-            {!generated && (
-              <div className="playback-guide">
-                请先生成当前焊缝的程序；预演只使用返回的相机系途经点和 WPR。
-              </div>
-            )}
-          </>
-        )}
-        <div className="viewport-status">
+        <div className="viewport-status" style={{ display: "flex" }}>
           <span>
             <i className={state.mode === "demo" ? "yellow" : "green"} />
             {state.mode === "demo" ? "模拟点云" : "后端点云"}

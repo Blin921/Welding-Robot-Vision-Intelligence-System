@@ -1,3 +1,4 @@
+const { openDemo } = require("./browser-mode.cjs");
 const { chromium, expect } = require('@playwright/test');
 const fs = require('node:fs');
 (async () => {
@@ -8,7 +9,8 @@ const fs = require('node:fs');
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));
     fs.mkdirSync('reports/formal', { recursive: true });
-    await page.goto(process.env.APP_URL || 'http://localhost:3019');
+    await openDemo(page, process.env.APP_URL || 'http://localhost:3019');
+    
     const acq = page.locator('[data-acquisition-screen]');
     await acq.locator('canvas').waitFor();
     // A real scan submission automatically opens the illustrative scene.

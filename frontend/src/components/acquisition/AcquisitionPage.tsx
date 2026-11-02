@@ -30,6 +30,9 @@ import {
   Upload,
   X,
 } from "lucide-react";
+import { useCompact } from "../useCompact";
+import { WorkflowIcon } from "../WorkflowSteps";
+import { calibrationStatus } from "../../lib/calibration-status";
 import ProcessPresentation from "../ProcessPresentation";
 import BrandMark from "../BrandMark";
 import { useWorkspace } from "../../stores/provider";
@@ -74,11 +77,11 @@ function Sprite({
   const Icon = nav >= 0 ? icons[nav] : heading?.[0];
   let content;
   if (x === 47 && y === 27) content = <><BrandMark /><strong>焊接机器人视觉识别系统</strong></>;
-  else if (nav >= 0) content = <>{Icon && <Icon size={15} />}{navigation[nav].label}</>;
+  else if (nav >= 0) content = <>{Icon && <WorkflowIcon tab={nav}><Icon size={15} /></WorkflowIcon>}{navigation[nav].label}</>;
   else if (heading) content = <>{Icon && <Icon size={19} />}{heading[1]}</>;
   else if (x === 1158) content = <><i className={state.health?.model_ok ? styles.green : styles.red} />模型</>;
   else if (x === 1229) content = <><i className={state.health?.cpp_ok ? styles.green : styles.red} />C++ 解算器</>;
-  else if (x === 1336) content = <><i className={state.calibration?.has_calib ? styles.green : styles.red} />{state.calibration?.has_calib ? "当前帧已标定" : "当前帧未标定"}</>;
+  else if (x === 1336) content = <><i className={styles[calibrationStatus(state.calibration).color]} />{calibrationStatus(state.calibration).label}</>;
   else if (x === 1463) content = "离线演示";
   else if (x === 1567) content = <SlidersHorizontal size={19} />;
   else if (x === 1606) content = <UserRound size={20} />;
@@ -130,6 +133,8 @@ export default function AcquisitionPage({
   active: boolean;
 }) {
   const { state, store } = useWorkspace();
+  const compact = useCompact();
+  const [compactPanel, setCompactPanel] = useState<"workflow" | "context">("workflow");
   const outer = useRef<HTMLDivElement>(null),
     viewport = useRef<HTMLElement>(null),
     cloudRef = useRef<CloudHandle>(null),
@@ -157,6 +162,9 @@ export default function AcquisitionPage({
     busy = Boolean(state.activeTask),
     pending = Boolean(state.pending),
     cloud = state.cloud;
+  const cloudSummary = cloud
+    ? `${state.frame} · 显示 ${cloud.header.n.toLocaleString()} / 原始 ${cloud.header.n_full.toLocaleString()} 点 · 实例 ${cloud.header.n_instances} · 来源 ${current?.source ?? cloud.header.source} · mm`
+    : "尚未载入点云";
   const notify = useCallback(
     (text: string) => store.notify(text, "warn"),
     [store],
@@ -301,6 +309,174 @@ export default function AcquisitionPage({
     setProjection(false);
     cloudRef.current?.reset();
   };
+  const contextPanels = <>
+          <section
+            className={`${styles.panel} ${styles.infoPanel} ${folded.info ? styles.folded : ""}`}
+          >
+            <button
+              className={styles.panelHeading}
+              aria-label="折叠或展开当前帧信息"
+              aria-expanded={!folded.info}
+              onClick={() => toggle("info")}
+            >
+              <Sprite
+                x={1241}
+                y={108}
+                w={155}
+                h={30}
+                style={{ position: "absolute", left: 15, top: 9 }}
+              />
+              {folded.info ? <ChevronDown /> : <ChevronUp />}
+            </button>
+            <div className={styles.infoGrid} hidden={folded.info}>
+              {[
+                ["当前帧", filename(state.frame)],
+                ["文件格式", state.frame ? "PCD" : "—"],
+                ["点云数量", cloud ? String(cloud.header.n_full) : "—"],
+                ["数据来源", current?.source ?? "—"],
+                ["坐标系", cloud ? "相机系" : "—"],
+                [
+                  "标定状态",
+                  state.calibration?.has_calib ? "已标定" : "未标定",
+                ],
+              ].map(([label, value], index) => (
+                <div className={styles.infoCell} key={label} title={label === "点云数量" ? cloudSummary : value}>
+                  <span>{label}</span>
+                  <strong className={index === 2 ? styles.number : ""}>
+                    {value}
+                  </strong>
+                </div>
+              ))}
+            </div>
+          </section>
+          <section
+            className={`${styles.panel} ${styles.taskPanel} ${folded.task ? styles.folded : ""}`}
+          >
+            <button
+              className={styles.panelHeading}
+              aria-label="折叠或展开采集任务"
+              aria-expanded={!folded.task}
+              onClick={() => toggle("task")}
+            >
+              <Sprite
+                x={1241}
+                y={378}
+                w={141}
+                h={30}
+                style={{ position: "absolute", left: 15, top: 10 }}
+              />
+              {folded.task ? <ChevronDown /> : <ChevronUp />}
+            </button>
+            <div className={styles.taskBody} hidden={folded.task}>
+              <div
+                className={styles.progress}
+                role="progressbar"
+                aria-label="采集任务状态"
+                aria-valuetext={busy ? "任务运行中，等待后端状态" : "空闲"}
+              >
+                <span className={busy ? styles.indeterminate : ""} />
+                <strong>{busy ? "运行中" : "空闲"}</strong>
+              </div>
+              <div className={styles.mutex}>
+                <span>✓</span>
+                <strong>采集与识别任务互斥</strong>
+              </div>
+              <button
+                className={styles.startButton}
+                disabled={busy || pending}
+                onClick={startScan}
+              >
+                <Play size={18} fill="currentColor" />
+                {busy ? "采集进行中" : "开始采集"}
+              </button>
+              {state.pollError && (
+                <button
+                  className={styles.pollRetry}
+                  onClick={store.retryPolling}
+                >
+                  连接中断，重新检查任务
+                </button>
+              )}
+            </div>
+          </section>
+          <section
+            className={`${styles.panel} ${styles.logPanel} ${folded.logs ? styles.folded : ""}`}
+          >
+            <div className={styles.panelHeading}>
+              <button
+                className={styles.logTitle}
+                aria-label="折叠或展开任务日志"
+                aria-expanded={!folded.logs}
+                onClick={() => toggle("logs")}
+              >
+                <Sprite x={1241} y={602} w={141} h={31} />
+              </button>
+              <div className={styles.logFilter}>
+                <button
+                  aria-label="筛选任务日志"
+                  aria-expanded={logMenu}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setLogMenu(!logMenu);
+                  }}
+                >
+                  {
+                    {
+                      all: "全部",
+                      scan: "采集",
+                      error: "错误",
+                      upload: "上传",
+                    }[logKind]
+                  }
+                  <ChevronDown size={15} />
+                </button>
+                {logMenu && (
+                  <div
+                    className={styles.menu}
+                    onPointerDown={(event) => event.stopPropagation()}
+                  >
+                    {(["all", "scan", "error", "upload"] as const).map(
+                      (kind) => (
+                        <button
+                          key={kind}
+                          onClick={() => {
+                            setLogKind(kind);
+                            setLogMenu(false);
+                          }}
+                        >
+                          {
+                            {
+                              all: "全部",
+                              scan: "采集",
+                              error: "错误",
+                              upload: "上传",
+                            }[kind]
+                          }
+                        </button>
+                      ),
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div
+              className={styles.logs}
+              hidden={folded.logs}
+              aria-live="polite"
+            >
+              {logs.length ? (
+                logs.map((log) => <LogRow key={log.id} log={log} />)
+              ) : (
+                <div className={styles.emptyLog}>
+                  <Info size={20} />
+                  <span>
+                    {logKind === "all" ? "当前无采集任务" : "没有匹配的日志"}
+                  </span>
+                </div>
+              )}
+            </div>
+          </section>
+  </>;
   return (
     <div
       ref={outer}
@@ -324,6 +500,7 @@ export default function AcquisitionPage({
     >
       <div
         className={styles.stage}
+        style={compact ? { gridTemplateColumns: "232px minmax(602px, 1fr)", gridTemplateRows: "84px minmax(0, 1fr) 44px", overflowX: "auto" } : undefined}
         data-acquisition-stage
       >
         <header className={styles.header}>
@@ -383,7 +560,7 @@ export default function AcquisitionPage({
                 ? "离线示例不调用 C++ 解算器"
                 : state.health?.cpp_ok
                   ? "C++ 已就绪"
-                  : "C++ 未就绪"
+                  : "解算器未就绪，请先在后端编译 C++ 可执行文件"
             }
             onClick={() => setDialog("settings")}
           >
@@ -393,7 +570,7 @@ export default function AcquisitionPage({
               <>
                 <i
                   className={
-                    state.health?.cpp_ok ? styles.green : styles.yellow
+                    state.health?.cpp_ok ? styles.green : state.health ? styles.red : styles.yellow
                   }
                 />
                 C++解算器
@@ -403,13 +580,7 @@ export default function AcquisitionPage({
           <button
             className={styles.healthCalib}
             aria-label="当前帧标定状态"
-            title={
-              mode === "demo"
-                ? "当前帧实际标定状态见右侧信息"
-                : state.calibration?.has_calib
-                  ? "当前帧已标定"
-                  : "当前帧未标定"
-            }
+            title={calibrationStatus(state.calibration).title}
             onClick={() => onNavigate(3)}
           >
             {mode === "demo" ? (
@@ -418,7 +589,7 @@ export default function AcquisitionPage({
               <>
                 <i
                   className={
-                    state.calibration?.has_calib ? styles.green : styles.red
+                    styles[calibrationStatus(state.calibration).color]
                   }
                 />
                 当前帧标定
@@ -457,7 +628,12 @@ export default function AcquisitionPage({
             <Sprite x={1606} y={29} w={36} h={39} />
           </button>
         </header>
-        <div className={styles.leftColumn}>
+        <div className={styles.leftColumn} style={compact ? { gridColumn: 1, gridRow: 2 } : undefined}>
+          {compact && <div className={styles.colorButtons}>
+            <button className={compactPanel === "workflow" ? styles.active : ""} onClick={() => setCompactPanel("workflow")}>工作流</button>
+            <button className={compactPanel === "context" ? styles.active : ""} onClick={() => setCompactPanel("context")}>焊缝与上下文</button>
+          </div>}
+          {(!compact || compactPanel === "workflow") && <>
           <section
             className={`${styles.panel} ${styles.dataPanel} ${folded.data ? styles.folded : ""}`}
           >
@@ -808,12 +984,15 @@ export default function AcquisitionPage({
               </button>
             </form>
           </section>
+          </>}
+          {compact && compactPanel === "context" && contextPanels}
         </div>
         <section
           ref={viewport}
           className={`${styles.panel} ${styles.viewport}`}
+          style={compact ? { gridColumn: 2, gridRow: 2 } : undefined}
         >
-          <div className={styles.viewportHeading}>
+          <div className={styles.viewportHeading} title={cloudSummary}>
             <Sprite x={417} y={109} w={255} h={29} />
           </div>
           <div className={styles.viewToolbar}>
@@ -900,7 +1079,7 @@ export default function AcquisitionPage({
               <Maximize size={19} />
             </button>
           </div>
-          <div className={styles.cloudLayer}>
+          <div className={styles.cloudLayer} role="group" aria-label={cloudSummary}>
             <ProcessPresentation stage={1} light={light} active={active} />
             {cloud && !state.loading ? (
               <CloudViewport
@@ -1018,175 +1197,8 @@ export default function AcquisitionPage({
             </div>
           )}
         </section>
-        <aside className={styles.rightColumn}>
-          <section
-            className={`${styles.panel} ${styles.infoPanel} ${folded.info ? styles.folded : ""}`}
-          >
-            <button
-              className={styles.panelHeading}
-              aria-label="折叠或展开当前帧信息"
-              aria-expanded={!folded.info}
-              onClick={() => toggle("info")}
-            >
-              <Sprite
-                x={1241}
-                y={108}
-                w={155}
-                h={30}
-                style={{ position: "absolute", left: 15, top: 9 }}
-              />
-              {folded.info ? <ChevronDown /> : <ChevronUp />}
-            </button>
-            <div className={styles.infoGrid} hidden={folded.info}>
-              {[
-                ["当前帧", filename(state.frame)],
-                ["文件格式", state.frame ? "PCD" : "—"],
-                ["点云数量", cloud ? String(cloud.header.n_full) : "—"],
-                ["数据来源", current?.source ?? "—"],
-                ["坐标系", cloud ? "相机系" : "—"],
-                [
-                  "标定状态",
-                  state.calibration?.has_calib ? "已标定" : "未标定",
-                ],
-              ].map(([label, value], index) => (
-                <div className={styles.infoCell} key={label} title={value}>
-                  <span>{label}</span>
-                  <strong className={index === 2 ? styles.number : ""}>
-                    {value}
-                  </strong>
-                </div>
-              ))}
-            </div>
-          </section>
-          <section
-            className={`${styles.panel} ${styles.taskPanel} ${folded.task ? styles.folded : ""}`}
-          >
-            <button
-              className={styles.panelHeading}
-              aria-label="折叠或展开采集任务"
-              aria-expanded={!folded.task}
-              onClick={() => toggle("task")}
-            >
-              <Sprite
-                x={1241}
-                y={378}
-                w={141}
-                h={30}
-                style={{ position: "absolute", left: 15, top: 10 }}
-              />
-              {folded.task ? <ChevronDown /> : <ChevronUp />}
-            </button>
-            <div className={styles.taskBody} hidden={folded.task}>
-              <div
-                className={styles.progress}
-                role="progressbar"
-                aria-label="采集任务状态"
-                aria-valuetext={busy ? "任务运行中，等待后端状态" : "空闲"}
-              >
-                <span className={busy ? styles.indeterminate : ""} />
-                <strong>{busy ? "运行中" : "空闲"}</strong>
-              </div>
-              <div className={styles.mutex}>
-                <span>✓</span>
-                <strong>采集与识别任务互斥</strong>
-              </div>
-              <button
-                className={styles.startButton}
-                disabled={busy || pending}
-                onClick={startScan}
-              >
-                <Play size={18} fill="currentColor" />
-                {busy ? "采集进行中" : "开始采集"}
-              </button>
-              {state.pollError && (
-                <button
-                  className={styles.pollRetry}
-                  onClick={store.retryPolling}
-                >
-                  连接中断，重新检查任务
-                </button>
-              )}
-            </div>
-          </section>
-          <section
-            className={`${styles.panel} ${styles.logPanel} ${folded.logs ? styles.folded : ""}`}
-          >
-            <div className={styles.panelHeading}>
-              <button
-                className={styles.logTitle}
-                aria-label="折叠或展开任务日志"
-                aria-expanded={!folded.logs}
-                onClick={() => toggle("logs")}
-              >
-                <Sprite x={1241} y={602} w={141} h={31} />
-              </button>
-              <div className={styles.logFilter}>
-                <button
-                  aria-label="筛选任务日志"
-                  aria-expanded={logMenu}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setLogMenu(!logMenu);
-                  }}
-                >
-                  {
-                    {
-                      all: "全部",
-                      scan: "采集",
-                      error: "错误",
-                      upload: "上传",
-                    }[logKind]
-                  }
-                  <ChevronDown size={15} />
-                </button>
-                {logMenu && (
-                  <div
-                    className={styles.menu}
-                    onPointerDown={(event) => event.stopPropagation()}
-                  >
-                    {(["all", "scan", "error", "upload"] as const).map(
-                      (kind) => (
-                        <button
-                          key={kind}
-                          onClick={() => {
-                            setLogKind(kind);
-                            setLogMenu(false);
-                          }}
-                        >
-                          {
-                            {
-                              all: "全部",
-                              scan: "采集",
-                              error: "错误",
-                              upload: "上传",
-                            }[kind]
-                          }
-                        </button>
-                      ),
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-            <div
-              className={styles.logs}
-              hidden={folded.logs}
-              aria-live="polite"
-            >
-              {logs.length ? (
-                logs.map((log) => <LogRow key={log.id} log={log} />)
-              ) : (
-                <div className={styles.emptyLog}>
-                  <Info size={20} />
-                  <span>
-                    {logKind === "all" ? "当前无采集任务" : "没有匹配的日志"}
-                  </span>
-                </div>
-              )}
-            </div>
-          </section>
-        </aside>
-        <footer className={styles.footer}>
+        {!compact && <aside className={styles.rightColumn}>{contextPanels}</aside>}
+        <footer className={styles.footer} style={compact ? { gridColumn: "1 / -1", gridRow: 3 } : undefined}>
           <button
             className={styles.footerTitle}
             aria-expanded={drawer !== null}

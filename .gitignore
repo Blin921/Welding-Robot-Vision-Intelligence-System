@@ -1,3 +1,28 @@
+# Dependencies and build output
 node_modules/
-.env*.local
-npm-debug.log*
+.next/
+*.tsbuildinfo
+out/
+
+# Local configuration and credentials (keep the checked-in example)
+.env
+.env.*
+!.env.example
+*.pem
+
+# Logs and local test output
+*.log
+playwright-report/
+test-results/
+reports/
+coverage/
+
+# Superseded static deliverables; retain locally, do not ship as backend frontend
+/deliverables/*.zip
+/deliverables/*.html
+
+# Editor / operating system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

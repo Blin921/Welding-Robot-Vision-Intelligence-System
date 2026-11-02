@@ -1,7 +1,9 @@
+const { openDemo } = require("./browser-mode.cjs");
 const {chromium,expect}=require('@playwright/test');
 const fs=require('node:fs');
 (async()=>{const browser=await chromium.launch({executablePath:'/usr/bin/chromium',args:['--no-sandbox','--enable-unsafe-swiftshader']});
-try{const page=await browser.newPage({viewport:{width:1536,height:742},deviceScaleFactor:1.25});page.setDefaultTimeout(30000);await page.goto(process.env.APP_URL || 'http://localhost:3016');
+try{const page=await browser.newPage({viewport:{width:1536,height:742},deviceScaleFactor:1.25});page.setDefaultTimeout(30000);await openDemo(page, process.env.APP_URL || 'http://localhost:3016');
+
 const acq=page.locator('[data-acquisition-screen]');await acq.locator('canvas').waitFor();
 fs.mkdirSync('reports',{recursive:true});const report=[];
 for(const [width,height] of [[1536,742],[1920,928],[1366,768],[1536,696]]){

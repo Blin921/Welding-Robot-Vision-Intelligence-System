@@ -1,3 +1,4 @@
+const { openDemo } = require("./browser-mode.cjs");
 const { chromium, expect } = require('@playwright/test');
 const fs = require('node:fs');
 (async () => {
@@ -11,7 +12,7 @@ const fs = require('node:fs');
       page.on('request', request => { if(/^https?:/.test(request.url())) requests.push(request.url()); });
       await page.route(/^https?:/, route => route.abort());
       await page.setContent(fs.readFileSync(process.env.HTML_FILE,'utf8'));
-    } else await page.goto(process.env.APP_URL || 'http://localhost:3021');
+    } else await openDemo(page, process.env.APP_URL || 'http://localhost:3021');
     const acquisition = page.locator('[data-acquisition-screen]');
     await acquisition.locator('canvas').waitFor();
     await acquisition.getByRole('navigation').getByRole('button',{name:'首页',exact:true}).click();

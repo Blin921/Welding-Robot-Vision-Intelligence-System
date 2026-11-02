@@ -183,8 +183,8 @@ export default function ContextPanels({
           </div>
           <p className="hint">
             {calib?.matrix
-              ? "显示已提交并保存的矩阵。"
-              : "当前接口未返回变换矩阵数值。"}
+              ? "矩阵数值仅供查看；离线示例中的数值为模拟标定。"
+              : "后端接口未提供矩阵数值，标定状态以接口返回为准。"}
           </p>
         </Panel>
         <Panel title="标定结果" icon={<Crosshair />}>

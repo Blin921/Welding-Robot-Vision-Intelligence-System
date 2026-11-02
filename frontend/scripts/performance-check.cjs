@@ -19,7 +19,9 @@ const parser = ts.transpileModule(fs.readFileSync("src/lib/blob.ts", "utf8"), {
     });
     const start = Date.now();
     await page.goto(process.env.APP_URL || "http://localhost:3000");
-    await page.locator(".viewer canvas").waitFor({ timeout: 30000 });
+    const health = await page.request.get(new URL("/api/health", page.url()).href);
+    if (!health.ok()) throw Error("请先配置 live 模式并连接真实 FastAPI 后端，再执行性能验收。");
+    await page.locator("[data-acquisition-screen] canvas").waitFor({ timeout: 30000 });
     await page.evaluate(
       () =>
         new Promise((resolve) =>
@@ -105,3 +107,4 @@ const parser = ts.transpileModule(fs.readFileSync("src/lib/blob.ts", "utf8"), {
   console.error(e.message);
   process.exitCode = 1;
 });
+

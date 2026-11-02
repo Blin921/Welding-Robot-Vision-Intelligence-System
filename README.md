@@ -33,6 +33,6 @@ npm run dev
 
 七个入口保留。全屏流式布局，三维视口深色；宽屏三栏，窄于 1200px 时右栏并入左栏页签，视口最少 600px。数据采集页已从零重做，不再使用参考图控件或固定画布缩放；原三维渲染调度和预演速度保留。
 
-默认连接 FastAPI。说明书的离线流程是后端 `WEBAPP_NO_MODEL=1` 配合真实 `sw2_e30` 历史产物及复用开关；没有后端时可在设置手动切换「浏览器自测」，两者不混淆。此仓库不包含后端、历史产物或设备。
+默认打开离线示例；接后端时在设置切换真实后端，或配置 NEXT_PUBLIC_DATA_MODE=live。说明书的离线流程是后端 `WEBAPP_NO_MODEL=1` 配合真实 `sw2_e30` 历史产物及复用开关；没有后端时可在设置手动切换「浏览器自测」，两者不混淆。此仓库不包含后端、历史产物或设备。
 
 需求实现与检查见 [frontend/README.md](frontend/README.md)，现场部署见 [DEPLOYMENT.md](DEPLOYMENT.md)。最新截图以 `frontend/screenshots/requirements-` 开头。源码更新直接推 main，旧运行压缩包不再维护。

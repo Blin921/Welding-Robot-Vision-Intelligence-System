@@ -234,11 +234,10 @@ export class WorkspaceStore {
     const calibration =
       calib.status === "fulfilled"
         ? {
-            ...calib.value,
-            ...(this.calibrations.get(frame)?.calib_tag ===
-            calib.value.calib_tag
+            ...(this.calibrations.get(frame)?.calib_tag === calib.value.calib_tag
               ? this.calibrations.get(frame)
               : {}),
+            ...calib.value,
           }
         : null;
     if (calibration) {
@@ -339,6 +338,10 @@ export class WorkspaceStore {
           : `上传成功：${result.id}`,
       );
     } catch (e) {
+      if (this.state.mode === "live") {
+        this.notify(`上传失败：${errorMessage(e)}。若仅测试本地点云，请在系统设置切换“离线示例”后重新上传；真实后端模式需要 FastAPI 上传接口可用。`, "error");
+        return;
+      }
       this.fail(e);
     } finally {
       this.patch({ pending: null });

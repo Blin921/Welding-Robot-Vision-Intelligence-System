@@ -1,3 +1,8 @@
+import {
+  backendErrorDetail,
+  calibrationPayload,
+  transferTimeoutMs,
+} from "./backend-contract";
 import type {
   Calibration,
   CalibrationRequest,
@@ -46,41 +51,64 @@ export class HttpApi implements WeldingApi {
     options: RequestInit = {},
     binary = false,
     expected?: number,
+    timeoutMs?: number,
   ): Promise<T> {
-    let response: Response;
+    const timeout = AbortSignal.timeout(
+      timeoutMs ?? (options.method === "PUT" ? 120000 : 30000),
+    );
+    const signal = options.signal
+      ? AbortSignal.any([options.signal, timeout])
+      : timeout;
     try {
-      response = await this.fetcher(`/api${path}`, {
+      const response = await this.fetcher(`/api${path}`, {
         cache: "no-store",
         ...options,
-        signal: options.signal
-          ? AbortSignal.any([
-              options.signal,
-              AbortSignal.timeout(options.method === "PUT" ? 120000 : 30000),
-            ])
-          : AbortSignal.timeout(options.method === "PUT" ? 120000 : 30000),
+        signal,
       });
+      if (!response.ok) {
+        let detail = `请求失败 (${response.status})`;
+        try {
+          detail = backendErrorDetail((await response.json()).detail) ?? detail;
+        } catch {
+          /* Non-JSON proxy errors retain the HTTP status. */
+        }
+        throw new ApiError(response.status, detail);
+      }
+      if (expected && response.status !== expected)
+        throw new ApiError(
+          response.status,
+          `任务接口应返回 ${expected}，实际返回 ${response.status}`,
+        );
+      return (
+        binary ? await response.arrayBuffer() : await response.json()
+      ) as T;
     } catch (error) {
+      if (error instanceof ApiError) throw error;
+      if (options.signal?.aborted)
+        throw new DOMException("请求已取消", "AbortError");
+      if (
+        timeout.aborted ||
+        (error instanceof Error && error.name === "TimeoutError")
+      )
+        throw new ApiError(
+          408,
+          "请求超时，后端操作可能仍在执行，请先核对任务或传输结果",
+        );
+      if (error instanceof SyntaxError)
+        throw new ApiError(
+          502,
+          "后端响应不是有效 JSON，请检查接口契约与代理配置",
+        );
       if (error instanceof Error && error.name === "AbortError") throw error;
       throw new ApiError(0, "无法连接后端，请检查 FastAPI 服务和代理地址");
     }
-    if (!response.ok) {
-      let detail = `请求失败 (${response.status})`;
-      try {
-        const json = await response.json();
-        if (typeof json.detail === "string") detail = json.detail;
-      } catch {
-        /* Non-JSON proxy errors retain the HTTP status. */
-      }
-      throw new ApiError(response.status, detail);
-    }
-    if (expected && response.status !== expected)
-      throw new ApiError(
-        response.status,
-        `任务接口应返回 ${expected}，实际返回 ${response.status}`,
-      );
-    return (binary ? await response.arrayBuffer() : await response.json()) as T;
   }
-  private post<T>(path: string, body: unknown, expected?: number) {
+  private post<T>(
+    path: string,
+    body: unknown,
+    expected?: number,
+    timeoutMs?: number,
+  ) {
     return this.request<T>(
       path,
       {
@@ -90,6 +118,7 @@ export class HttpApi implements WeldingApi {
       },
       false,
       expected,
+      timeoutMs,
     );
   }
   health(signal?: AbortSignal) {
@@ -108,11 +137,17 @@ export class HttpApi implements WeldingApi {
       },
     );
   }
+  private async submitTask(path: string, body: ScanRequest | RecognizeRequest) {
+    const value = await this.post<{ job_id: string }>(path, body, 202);
+    if (!value || typeof value.job_id !== "string" || !value.job_id.trim())
+      throw new ApiError(502, "任务接口未返回有效 job_id，请检查后端契约");
+    return value;
+  }
   scan(body: ScanRequest) {
-    return this.post<{ job_id: string }>("/scan", body, 202);
+    return this.submitTask("/scan", body);
   }
   recognize(body: RecognizeRequest) {
-    return this.post<{ job_id: string }>("/recognize", body, 202);
+    return this.submitTask("/recognize", body);
   }
   job(id: string, signal?: AbortSignal) {
     return this.request<Job>(`/jobs/${encodeURIComponent(id)}`, { signal });
@@ -135,10 +170,10 @@ export class HttpApi implements WeldingApi {
     });
   }
   calibrate(body: CalibrationRequest) {
-    return this.post<CalibrationResult>("/calib", body);
+    return this.post<CalibrationResult>("/calib", calibrationPayload(body));
   }
   program(body: ProgramRequest) {
-    return this.post<Program>("/program", body);
+    return this.post<Program>("/program", body, undefined, 120000);
   }
   async download(program: Program) {
     // Only same-origin API downloads are allowed; never trust an arbitrary response URL.
@@ -164,7 +199,12 @@ export class HttpApi implements WeldingApi {
     );
   }
   push(body: PushRequest) {
-    return this.post<PushResult>("/push", body);
+    return this.post<PushResult>(
+      "/push",
+      body,
+      undefined,
+      transferTimeoutMs(body.timeout_s),
+    );
   }
 }
 export function errorMessage(error: unknown): string {

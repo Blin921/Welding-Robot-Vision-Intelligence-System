@@ -199,6 +199,7 @@ export default function WorkflowControls({
                   </span>
                   <input
                     type="checkbox"
+                    aria-label="复用历史结果"
                     checked={forms.recognize.reuse_artifacts}
                     onChange={(e) =>
                       setForms((f) => ({
@@ -234,7 +235,7 @@ export default function WorkflowControls({
           </Panel>
           {tab === 1 ? (
             <Panel title="扫描采集设置" icon={<Settings2 />}>
-              <form
+              <form noValidate
                 onSubmit={(e) => {
                   e.preventDefault();
                   const error = validateScan(forms.scan);
@@ -367,7 +368,7 @@ export default function WorkflowControls({
               JSON / 矩阵
             </button>
           </div>
-          <form
+          <form noValidate
             onSubmit={(e) => {
               e.preventDefault();
               onCalibrate();
@@ -519,7 +520,7 @@ export default function WorkflowControls({
       )}
       {tab === 5 && (
         <Panel title="程序与轨迹预演" icon={<FileCode2 />}>
-          <form
+          <form noValidate
             onSubmit={(e) => {
               e.preventDefault();
               onGenerate();
@@ -648,7 +649,7 @@ export default function WorkflowControls({
       )}
       {tab === 6 && (
         <Panel title="FTP 文件传输" icon={<Send />}>
-          <form
+          <form noValidate
             onSubmit={(e) => {
               e.preventDefault();
               onPush();
@@ -661,7 +662,7 @@ export default function WorkflowControls({
               onChange={(v) =>
                 setForms((f) => ({ ...f, ftp: { ...f.ftp, host: v } }))
               }
-              placeholder="请输入地址"
+              placeholder={state.mode === "demo" ? "可留空，使用 controller.demo 模拟下发" : "请输入地址"}
             />
             {field("ftp", "port", "端口", undefined, 1, 65535, 1)}
             {(["user", "password", "remote_dir"] as const).map((key, i) => (

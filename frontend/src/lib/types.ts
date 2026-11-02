@@ -62,7 +62,7 @@ export interface Calibration {
   mean_dev_mm?: number;
 }
 export interface CalibrationResult {
-  calib_tag: string;
+  calib_tag: string | null;
   max_dev_mm?: number;
   mean_dev_mm?: number;
 }
@@ -201,3 +201,4 @@ export const DEFAULT_FTP: FtpSettings = {
   passive: true,
   timeout_s: 15,
 };
+

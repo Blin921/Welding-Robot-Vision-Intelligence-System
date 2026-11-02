@@ -1,3 +1,4 @@
+const { openDemo } = require("./browser-mode.cjs");
 const { chromium, expect } = require("@playwright/test");
 const fs = require("node:fs");
 (async () => {
@@ -6,7 +7,8 @@ const fs = require("node:fs");
     const page = await browser.newPage({ viewport: { width: 1920, height: 928 } });
     const errors = [];
     page.on("pageerror", error => errors.push(error.message));
-    await page.goto(process.env.APP_URL || "http://localhost:3014");
+    await openDemo(page, process.env.APP_URL || "http://localhost:3014");
+    
     const acquisition = page.locator('[data-acquisition-screen]');
     await acquisition.locator("canvas").waitFor();
     await expect(acquisition.getByRole("option", { name: "选择帧 frame_001", exact: true })).toBeVisible();

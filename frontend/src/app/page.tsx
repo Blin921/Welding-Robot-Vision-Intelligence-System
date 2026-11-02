@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
   CircleHelp,
@@ -45,6 +45,9 @@ import WorkflowControls, {
 import WorkspaceViewport from "../components/WorkspaceViewport";
 import ContextPanels from "../components/ContextPanels";
 import TaskCenter from "../components/TaskCenter";
+import { useCompact } from "../components/useCompact";
+import { WorkflowIcon } from "../components/WorkflowSteps";
+import { calibrationStatus } from "../lib/calibration-status";
 import AcquisitionPage from "../components/acquisition/AcquisitionPage";
 import PdfStage from "../components/PdfStage";
 import { seamLabel } from "../components/SeamList";
@@ -94,12 +97,16 @@ function Workspace({
   onMode: (mode: AppMode) => void;
 }) {
   const { state, store } = useWorkspace();
+  const calibrationDefaults = useMemo(() => ({
+    ...initialForms,
+    pairs: mode === "demo" ? INITIAL_PAIRS : Array.from({ length: 3 }, () => ({ cam: [NaN, NaN, NaN] as [number, number, number], base: [NaN, NaN, NaN] as [number, number, number] })),
+  }), [mode]);
   const [tab, setTab] = useState(1),
     [light, setLight] = useState(true),
     [taskOpen, setTaskOpen] = useState(false),
     [dialog, setDialog] = useState<Dialog>(null),
     [forms, setForms] = useState<Forms>(() => ({
-      ...initialForms,
+      ...calibrationDefaults,
       recognize: { ...DEFAULT_RECOGNIZE, reuse_artifacts: mode === "demo" },
     })),
     [compactPanel, setCompactPanel] = useState<"workflow" | "context">(
@@ -125,10 +132,10 @@ function Workspace({
   >({});
   const effectiveForms = {
     ...forms,
-    pairs: calibrationDrafts[state.frame]?.pairs ?? initialForms.pairs,
-    matrix: calibrationDrafts[state.frame]?.matrix ?? initialForms.matrix,
+    pairs: calibrationDrafts[state.frame]?.pairs ?? calibrationDefaults.pairs,
+    matrix: calibrationDrafts[state.frame]?.matrix ?? calibrationDefaults.matrix,
     calibMode:
-      calibrationDrafts[state.frame]?.calibMode ?? initialForms.calibMode,
+      calibrationDrafts[state.frame]?.calibMode ?? calibrationDefaults.calibMode,
   };
   const leftColumn = useRef<HTMLElement>(null),
     rightColumn = useRef<HTMLElement>(null);
@@ -136,7 +143,7 @@ function Workspace({
     leftColumn.current?.scrollTo({ top: 0 });
     rightColumn.current?.scrollTo({ top: 0 });
   }, [tab, compactPanel]);
-  const compact = false,
+  const compact = useCompact(),
     closeDialog = useCallback(() => setDialog(null), []);
   // Only non-secret FTP preferences are restored. A password is never persisted.
   useEffect(() => {
@@ -274,14 +281,21 @@ function Workspace({
       store.notify("坐标仍是相机系，禁止上机。请先标定并重新生成程序", "error");
       return;
     }
-    const error = validateFtp(forms.ftp);
+    // A simulated transfer has no controller; allow an empty address in demo mode.
+    const ftp = {
+      ...forms.ftp,
+      host: mode === "demo" && !forms.ftp.host.trim()
+        ? "controller.demo"
+        : forms.ftp.host.trim(),
+    };
+    const error = validateFtp(ftp);
     if (error) {
       store.notify(error, "error");
       return;
     }
     setDialog({
       kind: "push",
-      request: { ...forms.ftp, frame: program.frame, seam_id: program.seamId },
+      request: { ...ftp, frame: program.frame, seam_id: program.seamId },
       name: program.data.ls_name,
     });
   }
@@ -303,8 +317,7 @@ function Workspace({
         store.notify("先生成程序，预演将使用返回的相机系途经点和姿态", "info");
     }
   }
-  const calib = state.calibration,
-    calibWarn = (calib?.max_dev_mm ?? 0) > 1.5;
+  const calib = state.calibration;
   const context = (
     <ContextPanels
       tab={tab}
@@ -335,11 +348,12 @@ function Workspace({
             {navigation.map((item, i) => (
               <button
                 key={item.label}
+                aria-label={item.label}
                 className={tab === i ? "active" : ""}
                 aria-current={tab === i ? "page" : undefined}
                 onClick={() => go(i)}
               >
-                <item.icon size={16} />
+                <WorkflowIcon tab={i}><item.icon size={16} /></WorkflowIcon>
                 <span>{item.label}</span>
               </button>
             ))}
@@ -401,33 +415,9 @@ function Workspace({
                     : "未知"}
               </span>
             </span>
-            <span
-              title={
-                calibWarn
-                  ? "最大残差超过 1.5mm，请复核"
-                  : (calib?.calib_tag ?? "按当前帧独立标定")
-              }
-            >
-              <i
-                className={
-                  !calib
-                    ? "yellow"
-                    : calib.uncalibrated
-                      ? "red"
-                      : calibWarn
-                        ? "yellow"
-                        : "green"
-                }
-              />
-              <span className="health-calibration-label">
-                {!calib
-                  ? "标定未知"
-                  : calib.uncalibrated
-                    ? "当前帧未标定"
-                    : calibWarn
-                      ? "标定需复核"
-                      : "当前帧已标定"}
-              </span>
+            <span title={calibrationStatus(calib).title}>
+              <i className={calibrationStatus(calib).color} />
+              <span className="health-calibration-label">{calibrationStatus(calib).label}</span>
             </span>
             <button
               onClick={() => setDialog({ kind: "help" })}
@@ -442,7 +432,7 @@ function Workspace({
               onClick={() => setDialog({ kind: "settings" })}
             >
               <Radio size={13} />
-              {mode === "demo" ? "离线演示" : "后端模式"}
+              {mode === "demo" ? "演示模式 · 标定/程序/下发均模拟" : "后端模式"}
             </button>
             <button
               title="切换深浅主题"
@@ -483,8 +473,9 @@ function Workspace({
           <>
             <main
               className={`workspace page-${tab} ${compact ? "compact" : ""}`}
+              style={compact ? { gridTemplateColumns: "232px minmax(602px, 1fr)", gridTemplateRows: "minmax(0, 1fr)", overflowX: "auto" } : undefined}
             >
-              <aside className="left-column" ref={leftColumn}>
+              <aside className="left-column" ref={leftColumn} style={compact ? { gridColumn: 1, gridRow: 1 } : undefined}>
                 {compact && (
                   <div className="segmented context-tabs">
                     <button
@@ -524,7 +515,7 @@ function Workspace({
                   context
                 )}
               </aside>
-              <section className="center-column">
+              <section className="center-column" style={compact ? { gridColumn: 2, gridRow: 1 } : undefined}>
                 <WorkspaceViewport
                   tab={tab}
                   light={light}
@@ -700,7 +691,7 @@ function Workspace({
                   >
                     <Box />
                     <strong>离线演示</strong>
-                    <small>模拟接口、固定点云；不连接设备</small>
+                    <small>配套示例数据；不连接后端和设备</small>
                   </button>
                   <button
                     className={mode === "live" ? "chosen" : ""}
@@ -737,7 +728,7 @@ function Workspace({
                 </p>
                 <Notice>
                   {mode === "demo"
-                    ? "当前点云、任务、标定及程序均为浏览器模拟；上传内容不会被推理。"
+                    ? "离线示例不请求后端，使用模拟标定和程序。上传配套 demo_workpiece.pcd 可演示焊缝与预演；其他 PCD 仅预览，识别需切换真实后端。"
                     : "当前通过同源 /api 请求既有后端。后端负责推理、标定、程序生成及 FTP。"}
                 </Notice>
                 <p>

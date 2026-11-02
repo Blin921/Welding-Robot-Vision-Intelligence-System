@@ -1,4 +1,5 @@
 "use client";
+import type { ReactNode } from "react";
 import { useWorkspace } from "../stores/provider";
 export default function WorkflowSteps({
   current,
@@ -70,4 +71,23 @@ export default function WorkflowSteps({
       ))}
     </nav>
   );
+}
+
+
+/** Reuse the existing navigation icons; no extra toolbar or layout row. */
+export function WorkflowIcon({ tab, children }: { tab: number; children: ReactNode }) {
+  const { state, store } = useWorkspace();
+  if (tab < 2 || tab > 6) return <>{children}</>;
+  const running = tab === 2 ? Boolean(state.activeTask) : tab === 3 ? state.pending === "calib" : tab === 5 ? state.pending === "program" : tab === 6 ? state.pending === "push" : false;
+  const ready = tab === 2 ? Boolean(state.cloud && state.frames.find(frame => frame.id === state.frame)?.has_artifacts)
+    : tab === 3 ? Boolean(state.calibration?.has_calib)
+    : tab === 4 ? state.selected !== null
+    : tab === 5 ? Boolean(store.currentProgram()) : Boolean(store.currentPush());
+  const warning = tab >= 5 && (!state.calibration || state.calibration.uncalibrated);
+  const label = `${running ? "进行中" : ready ? "就绪" : "未就绪"}${warning ? "；未标定，禁止上机" : ""}`;
+  return <span title={label} data-workflow-state={running ? "running" : ready ? "ready" : "idle"} style={{ position: "relative", display: "inline-flex", width: 16, height: 16, alignItems: "center", justifyContent: "center" }}>
+    {children}
+    <i aria-hidden="true" className={running ? "blue" : ready ? "green" : "idle-dot"} style={{ position: "absolute", right: -1, bottom: -1, width: 5, height: 5, borderRadius: "50%", background: !running && !ready ? "var(--muted)" : undefined }} />
+    <span className="sr-only">{label}</span>
+  </span>;
 }

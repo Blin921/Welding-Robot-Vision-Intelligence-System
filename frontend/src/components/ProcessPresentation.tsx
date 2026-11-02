@@ -10,8 +10,8 @@ const Scene = dynamic(() => import("./samples/SampleCloud"), { ssr: false });
 export default function ProcessPresentation({ stage, light, active = true }: { stage: number; light: boolean; active?: boolean }) {
   const { state } = useWorkspace();
   const spec = STAGES[stage] ?? STAGES[0];
-  const [open, setOpen] = useState(false);
-  const [playing, setPlaying] = useState(false);
+  const [open, setOpen] = useState(stage === 5);
+  const [playing, setPlaying] = useState(stage === 5);
   const [progress, setProgress] = useState(0);
   const [speed, setSpeed] = useState(1);
   const previous = useRef("");

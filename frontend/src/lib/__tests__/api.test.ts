@@ -112,3 +112,85 @@ describe("browser fetch receiver", () => {
     }
   });
 });
+
+describe("FastAPI error and timeout compatibility", () => {
+  it("shows structured 422 errors without submitted secrets", async () => {
+    const api = new HttpApi(
+      async () =>
+        new Response(
+          JSON.stringify({
+            detail: [
+              {
+                loc: ["body", "password"],
+                msg: "Field required",
+                input: "do-not-display",
+              },
+            ],
+          }),
+          { status: 422 },
+        ),
+    );
+    await expect(
+      api.push({ ...DEFAULT_FTP, frame: "f", seam_id: 1 }),
+    ).rejects.toMatchObject({
+      status: 422,
+      detail: "参数校验失败：password：Field required",
+    });
+  });
+  it("rejects missing task IDs before polling an undefined URL", async () => {
+    const api = new HttpApi(async () => new Response("{}", { status: 202 }));
+    await expect(
+      api.recognize({ ...DEFAULT_RECOGNIZE, frame: "f" }),
+    ).rejects.toMatchObject({ status: 502 });
+  });
+  it("preserves non-JSON proxy failures and reports malformed success responses", async () => {
+    await expect(
+      new HttpApi(
+        async () => new Response("gateway unavailable", { status: 502 }),
+      ).health(),
+    ).rejects.toMatchObject({ status: 502, detail: "请求失败 (502)" });
+    await expect(
+      new HttpApi(async () => new Response("not json")).health(),
+    ).rejects.toMatchObject({
+      status: 502,
+      detail: expect.stringContaining("JSON"),
+    });
+  });
+  it("uses an FTP-specific HTTP budget while keeping the body unchanged", async () => {
+    const timeout = vi.spyOn(AbortSignal, "timeout");
+    try {
+      const api = new HttpApi(async (_url, options) => {
+        expect(JSON.parse(String(options?.body)).timeout_s).toBe(60);
+        return new Response(
+          JSON.stringify({
+            remote_path: "MD:/P.ls",
+            bytes: 12,
+            existed_before: false,
+          }),
+        );
+      });
+      await api.push({ ...DEFAULT_FTP, timeout_s: 60, frame: "f", seam_id: 1 });
+      expect(timeout).toHaveBeenLastCalledWith(390000);
+    } finally {
+      timeout.mockRestore();
+    }
+  });
+  it("separates caller cancellation from an uncertain backend timeout", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const api = new HttpApi(async () => {
+      throw new DOMException("aborted", "AbortError");
+    });
+    await expect(api.health(controller.signal)).rejects.toMatchObject({
+      name: "AbortError",
+    });
+    await expect(
+      new HttpApi(async () => {
+        throw new DOMException("timed out", "TimeoutError");
+      }).health(),
+    ).rejects.toMatchObject({
+      status: 408,
+      detail: expect.stringContaining("仍在执行"),
+    });
+  });
+});

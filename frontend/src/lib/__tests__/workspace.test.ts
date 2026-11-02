@@ -29,13 +29,13 @@ describe("workspace consistency", () => {
     expect(store.getSnapshot().logs).toHaveLength(3);
     store.dispose();
   });
-  it("permits confirmed file-only transfer of an uncalibrated inspection program without starting motion", async () => {
+  it("simulates file-only transfer with display calibration without starting motion", async () => {
     const api = new DemoApi(),
       push = vi.spyOn(api, "push"),
       store = new WorkspaceStore(api, "demo");
     await store.start();
     await store.generate(DEFAULT_PROGRAM);
-    expect(store.currentProgram()?.uncalibrated).toBe(true);
+    expect(store.currentProgram()?.uncalibrated).toBe(false);
     await store.push({
       ...DEFAULT_FTP,
       host: "fixture",
@@ -143,14 +143,14 @@ describe("workspace consistency", () => {
     expect(store.getSnapshot().history[0].state).toBe("done");
     store.dispose();
   });
-  it("surfaces the final camera error line instead of reporting simulated success", async () => {
+  it("completes a labelled simulated scan without a camera", async () => {
     vi.useFakeTimers();
     const store = new WorkspaceStore(new DemoApi(), "demo");
     await store.start();
     await store.run("scan", DEFAULT_SCAN);
     await vi.advanceTimersByTimeAsync(3100);
-    expect(store.getSnapshot().history[0].state).toBe("error");
-    expect(store.getSnapshot().toast?.text).toContain("本机未接相机");
+    expect(store.getSnapshot().history[0].state).toBe("done");
+    expect(store.getSnapshot().history[0].log.join(" ")).toContain("模拟采集完成");
     expect(store.getSnapshot().activeTask).toBeNull();
     store.dispose();
   });

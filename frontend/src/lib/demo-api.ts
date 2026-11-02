@@ -12,12 +12,16 @@ import type {
   PushRequest,
   RecognizeRequest,
   ScanRequest,
+  SeamResult,
   Vec3,
 } from "./types";
 const blankCalibration = (): Calibration => ({
-  calib_tag: null,
-  has_calib: false,
-  uncalibrated: true,
+  calib_tag: "demo_display_only",
+  has_calib: true,
+  uncalibrated: false,
+  matrix: [[1, 0, 0, 120], [0, 1, 0, -80], [0, 0, 1, 250], [0, 0, 0, 1]],
+  max_dev_mm: 0.42,
+  mean_dev_mm: 0.26,
 });
 /** A browser-only fixture adapter. It never opens connections to a camera/controller. */
 export class DemoApi implements WeldingApi {
@@ -114,19 +118,22 @@ export class DemoApi implements WeldingApi {
     job.seconds = (Date.now() - entry.started) / 1000;
     if (job.state === "running" && job.seconds >= 2) {
       if (job.kind === "scan") {
-        job.state = "error";
-        job.error = "本机未接相机：演示模式没有 RVC 相机连接";
-        job.log.push(job.error);
+        const frame = `demo_scan_${Date.now()}`;
+        this.frameData.push({ id: frame, source: "camera", bytes: 12400000, mtime: Date.now() / 1000, has_artifacts: true });
+        job.state = "done";
+        job.result = { frame, seconds: job.seconds };
+        job.log.push("模拟采集完成：示例点云，未连接相机");
       } else {
         const p = request as RecognizeRequest;
         const f = this.frameData.find((f) => f.id === p.frame)!;
-        if (!p.reuse_artifacts || !f.has_artifacts) {
+        if (!f) {
           job.state = "error";
           job.error = !p.reuse_artifacts
             ? "未加载模型，请勾选复用历史结果"
             : "此帧无历史产物，请选择 sw2_e30；演示模式不推理上传文件";
           job.log.push(job.error);
         } else {
+          f.has_artifacts = true;
           job.state = "done";
           job.result = { n_seams: 4, seconds: job.seconds, frame: p.frame };
           job.log.push("复用历史结果（模拟），跳过模型推理", "完成：4 条焊缝");
@@ -143,7 +150,7 @@ export class DemoApi implements WeldingApi {
     this.requireResult(frame);
     return demoCloud();
   }
-  async seams(frame: string) {
+  async seams(frame: string): Promise<SeamResult> {
     this.requireResult(frame);
     const c = await this.calibration(frame);
     return {
@@ -159,7 +166,7 @@ export class DemoApi implements WeldingApi {
   }
   async calibrate(p: CalibrationRequest): Promise<CalibrationResult> {
     if ("clear" in p) {
-      this.calibrations.delete(p.frame);
+      this.calibrations.set(p.frame, { calib_tag: null, has_calib: false, uncalibrated: true });
       this.invalidatePrograms(p.frame);
       return { calib_tag: "" };
     }
@@ -183,6 +190,7 @@ export class DemoApi implements WeldingApi {
       calib_tag: tag,
       has_calib: true,
       uncalibrated: false,
+      matrix: "matrix" in p ? p.matrix : blankCalibration().matrix,
       ...("pairs" in p ? { max_dev_mm: 0.42, mean_dev_mm: 0.26 } : {}),
     };
     this.calibrations.set(p.frame, c);
@@ -201,7 +209,7 @@ export class DemoApi implements WeldingApi {
     this.requireResult(p.frame);
     const error = validateProgram(p);
     if (error) throw new ApiError(400, error);
-    const seam = demoSeams().find((s) => s.id === p.seam_id);
+    const seam = (await this.seams(p.frame)).seams.find((s) => s.id === p.seam_id);
     if (!seam) throw new ApiError(404, "焊缝不存在");
     const c = await this.calibration(p.frame);
     const name =
@@ -220,7 +228,7 @@ export class DemoApi implements WeldingApi {
         ...(c.uncalibrated ? ["坐标仍是相机系，禁止上机"] : []),
       ],
       waypoints_cam_mm: seam.trajectory_mm,
-      waypoints_base_mm: seam.trajectory_mm,
+      waypoints_base_mm: seam.trajectory_mm.map((point) => point.map((_, row) => (c.matrix?.[row]?.[3] ?? 0) + point.reduce((sum, v, col) => sum + v * (c.matrix?.[row]?.[col] ?? (row === col ? 1 : 0)), 0)) as Vec3),
       wpr_list: seam.trajectory_mm.map(() => [...wpr] as Vec3),
       download: `/api/program/${encodeURIComponent(name)}/download`,
     };
