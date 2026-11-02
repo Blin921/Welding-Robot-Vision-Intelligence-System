@@ -3,20 +3,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
   CircleHelp,
-  Crosshair,
-  Database,
-  Layers3,
-  Moon,
   Radio,
   RotateCcw,
-  ScanLine,
-  Send,
-  Settings2,
   ShieldCheck,
-  Sun,
   TriangleAlert,
-  Workflow,
-  UserRound,
   X,
 } from "lucide-react";
 import { WorkspaceProvider, useWorkspace } from "../stores/provider";
@@ -37,7 +27,7 @@ import {
 } from "../lib/validation";
 import { Modal, Notice } from "../components/ui";
 import Overview from "../components/Overview";
-import BrandMark from "../components/BrandMark";
+import AppHeader from "../components/AppHeader";
 import WorkflowControls, {
   INITIAL_PAIRS,
   type Forms,
@@ -46,20 +36,9 @@ import WorkspaceViewport from "../components/WorkspaceViewport";
 import ContextPanels from "../components/ContextPanels";
 import TaskCenter from "../components/TaskCenter";
 import { useCompact } from "../components/useCompact";
-import { WorkflowIcon } from "../components/WorkflowSteps";
-import { calibrationStatus } from "../lib/calibration-status";
 import AcquisitionPage from "../components/acquisition/AcquisitionPage";
 import PdfStage from "../components/PdfStage";
 import { seamLabel } from "../components/SeamList";
-const navigation = [
-  { label: "首页", icon: Box },
-  { label: "数据采集", icon: Database },
-  { label: "AI 识别", icon: ScanLine },
-  { label: "坐标标定", icon: Crosshair },
-  { label: "焊缝管理", icon: Layers3 },
-  { label: "程序与预演", icon: Workflow },
-  { label: "程序下发", icon: Send },
-];
 const initialForms: Forms = {
   scan: DEFAULT_SCAN,
   recognize: DEFAULT_RECOGNIZE,
@@ -317,7 +296,6 @@ function Workspace({
         store.notify("先生成程序，预演将使用返回的相机系途经点和姿态", "info");
     }
   }
-  const calib = state.calibration;
   const context = (
     <ContextPanels
       tab={tab}
@@ -333,126 +311,14 @@ function Workspace({
   );
   return (
     <>
+      <AppHeader tab={tab} light={light} onNavigate={go} onTheme={toggleTheme} onSettings={() => setDialog({ kind: "settings" })} />
       <div hidden={tab !== 1} data-pane="acquisition">
         <AcquisitionPage onNavigate={go} onMode={onMode} mode={mode} light={light} onTheme={toggleTheme} active={tab === 1} />
       </div>
       <div hidden={tab === 1} data-pane="workbench">
     <PdfStage>
       <div className={`app pdf-app ${light ? "light" : ""}`}>
-        <header className="topbar">
-          <button className="brand" onClick={() => go(0)}>
-            <BrandMark />
-            <span>焊接机器人视觉识别系统</span>
-          </button>
-          <nav aria-label="主要导航">
-            {navigation.map((item, i) => (
-              <button
-                key={item.label}
-                aria-label={item.label}
-                className={tab === i ? "active" : ""}
-                aria-current={tab === i ? "page" : undefined}
-                onClick={() => go(i)}
-              >
-                <WorkflowIcon tab={i}><item.icon size={16} /></WorkflowIcon>
-                <span>{item.label}</span>
-              </button>
-            ))}
-          </nav>
-          <div className="health" aria-label="系统健康状态">
-            <span
-              title={
-                state.health?.model_ok
-                  ? "模型已加载"
-                  : (state.health?.model_error ??
-                    state.healthError ??
-                    "等待健康自检")
-              }
-            >
-              <i
-                className={
-                  state.health?.model_ok
-                    ? "green"
-                    : state.health
-                      ? "red"
-                      : "yellow"
-                }
-              />
-              模型
-              <span className="sr-only">
-                {" "}
-                ·{" "}
-                {state.health?.model_ok
-                  ? "就绪"
-                  : state.health
-                    ? "未加载"
-                    : "未知"}
-              </span>
-            </span>
-            <span
-              title={
-                state.health?.cpp_ok
-                  ? "C++ 解算器可用"
-                  : "解算器未就绪，请先在后端编译 C++ 可执行文件"
-              }
-            >
-              <i
-                className={
-                  state.health?.cpp_ok
-                    ? "green"
-                    : state.health
-                      ? "red"
-                      : "yellow"
-                }
-              />
-              C++<span className="health-long">解算器</span>
-              <span className="sr-only">
-                {" "}
-                ·{" "}
-                {state.health?.cpp_ok
-                  ? "就绪"
-                  : state.health
-                    ? "未就绪"
-                    : "未知"}
-              </span>
-            </span>
-            <span title={calibrationStatus(calib).title}>
-              <i className={calibrationStatus(calib).color} />
-              <span className="health-calibration-label">{calibrationStatus(calib).label}</span>
-            </span>
-            <button
-              onClick={() => setDialog({ kind: "help" })}
-              aria-label="使用说明"
-            >
-              <CircleHelp size={16} />
-            </button>
-          </div>
-          <div className="header-tools">
-            <button
-              className={`demo-tag ${mode === "live" ? "live-mode" : ""}`}
-              onClick={() => setDialog({ kind: "settings" })}
-            >
-              <Radio size={13} />
-              {mode === "demo" ? "演示模式 · 标定/程序/下发均模拟" : "后端模式"}
-            </button>
-            <button
-              title="切换深浅主题"
-              aria-label="切换深浅主题"
-              onClick={toggleTheme}
-            >
-              {light ? <Moon /> : <Sun />}
-            </button>
-            <button
-              title="系统设置"
-              aria-label="系统设置"
-              onClick={() => setDialog({ kind: "settings" })}
-            >
-              <Settings2 />
-            </button>
-            <span className="avatar" aria-label="操作员">
-              <UserRound size={20} />
-            </span>
-          </div>
-        </header>
+        <div className="app-header-space" aria-hidden="true" />
         {state.healthError && (
           <div className="connection-error" role="alert">
             <TriangleAlert size={16} />

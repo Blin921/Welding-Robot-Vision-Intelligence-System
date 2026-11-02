@@ -1659,3 +1659,10 @@
 .dark .terminal { background: #0c1821; color: var(--text); border-color: var(--border); }
 .dark .sprite { mix-blend-mode: normal !important; }
 .dark .nativeHeading { color: var(--text); }
+
+/* Shared header keeps the same height on every screen. */
+.stage { grid-template-rows: 76px minmax(0, 1fr) 44px; }
+@media (max-width: 700px) { .stage { grid-template-rows: 76px minmax(160px, 32%) minmax(0, 1fr) 44px; } }
+
+/* Match the shared application shell inset, including narrow displays. */
+.stage { padding: 10px 12px; }

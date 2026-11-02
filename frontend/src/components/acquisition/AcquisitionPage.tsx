@@ -8,7 +8,7 @@ import {
   type CSSProperties,
 } from "react";
 import {
-  Box, Sun, Moon,
+  Box,
   Home, ScanLine, Crosshair, Layers3, Workflow, Send, Settings2, UserRound, SlidersHorizontal, Activity,
   ChevronDown,
   ChevronUp,
@@ -121,9 +121,8 @@ function numberValue(value: number) {
   return Number.isFinite(value) ? String(value) : "";
 }
 export default function AcquisitionPage({
-  onNavigate,
   onMode,
-  mode, light, onTheme, active,
+  mode, light, active,
 }: {
   onNavigate: (page: number) => void;
   onMode: (mode: AppMode) => void;
@@ -500,134 +499,10 @@ export default function AcquisitionPage({
     >
       <div
         className={styles.stage}
-        style={compact ? { gridTemplateColumns: "232px minmax(602px, 1fr)", gridTemplateRows: "84px minmax(0, 1fr) 44px", overflowX: "auto" } : undefined}
+        style={compact ? { gridTemplateColumns: "232px minmax(602px, 1fr)", gridTemplateRows: "76px minmax(0, 1fr) 44px", overflowX: "auto" } : undefined}
         data-acquisition-stage
       >
-        <header className={styles.header}>
-          <button
-            className={styles.brand}
-            aria-label="焊接机器人视觉识别系统，返回首页"
-            onClick={() => onNavigate(0)}
-          >
-            <Sprite x={47} y={27} w={207} h={43} />
-          </button>
-          <nav aria-label="主要导航">
-            {navigation.map((item, index) => (
-              <button
-                key={item.label}
-                aria-label={item.label}
-                aria-current={index === 1 ? "page" : undefined}
-                className={styles.navButton}
-                style={{
-                  left: item.x - 23,
-                  top: item.y - 13,
-                  width: item.w,
-                  height: item.h,
-                }}
-                onClick={() => onNavigate(index)}
-              >
-                <Sprite {...item} />
-              </button>
-            ))}
-          </nav>
-          <button
-            className={styles.healthModel}
-            aria-label="模型状态"
-            title={
-              mode === "demo"
-                ? "离线演示，不加载真实模型"
-                : (state.health?.model_error ??
-                  (state.health?.model_ok ? "模型已就绪" : "模型未加载"))
-            }
-            onClick={() => setDialog("settings")}
-          >
-            {mode === "demo" ? (
-              <Sprite x={1158} y={29} w={66} h={37} />
-            ) : (
-              <>
-                <i
-                  className={state.health?.model_ok ? styles.green : styles.red}
-                />
-                模型
-              </>
-            )}
-          </button>
-          <button
-            className={styles.healthCpp}
-            aria-label="C++ 解算器状态"
-            title={
-              mode === "demo"
-                ? "离线示例不调用 C++ 解算器"
-                : state.health?.cpp_ok
-                  ? "C++ 已就绪"
-                  : "解算器未就绪，请先在后端编译 C++ 可执行文件"
-            }
-            onClick={() => setDialog("settings")}
-          >
-            {mode === "demo" ? (
-              <Sprite x={1229} y={29} w={101} h={37} />
-            ) : (
-              <>
-                <i
-                  className={
-                    state.health?.cpp_ok ? styles.green : state.health ? styles.red : styles.yellow
-                  }
-                />
-                C++解算器
-              </>
-            )}
-          </button>
-          <button
-            className={styles.healthCalib}
-            aria-label="当前帧标定状态"
-            title={calibrationStatus(state.calibration).title}
-            onClick={() => onNavigate(3)}
-          >
-            {mode === "demo" ? (
-              <Sprite x={1336} y={29} w={105} h={37} />
-            ) : (
-              <>
-                <i
-                  className={
-                    styles[calibrationStatus(state.calibration).color]
-                  }
-                />
-                当前帧标定
-              </>
-            )}
-          </button>
-          <button
-            className={styles.demoButton}
-            aria-label={
-              mode === "demo"
-                ? "离线演示，切换连接模式"
-                : "后端模式，切换连接模式"
-            }
-            onClick={() => setDialog("settings")}
-            title="切换示例与 FastAPI 后端"
-          >
-            {mode === "demo" ? (
-              <Sprite x={1463} y={29} w={91} h={37} />
-            ) : (
-              <span>后端模式</span>
-            )}
-          </button>
-          <button className={styles.themeButton} aria-label="切换深浅主题" onClick={onTheme} title={light ? "切换暗色" : "切换浅色"}>{light ? <Moon size={17} /> : <Sun size={17} />}</button>
-          <button
-            className={styles.settingsButton}
-            aria-label="系统设置"
-            onClick={() => setDialog("settings")}
-          >
-            <Sprite x={1567} y={32} w={30} h={31} />
-          </button>
-          <button
-            className={styles.profileButton}
-            aria-label="操作者信息"
-            onClick={() => setDialog("profile")}
-          >
-            <Sprite x={1606} y={29} w={36} h={39} />
-          </button>
-        </header>
+        <div className="app-header-space" aria-hidden="true" />
         <div className={styles.leftColumn} style={compact ? { gridColumn: 1, gridRow: 2 } : undefined}>
           {compact && <div className={styles.colorButtons}>
             <button className={compactPanel === "workflow" ? styles.active : ""} onClick={() => setCompactPanel("workflow")}>工作流</button>
