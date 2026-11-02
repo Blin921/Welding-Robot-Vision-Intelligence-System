@@ -6,8 +6,8 @@ export default function BrandMark() {
       className="brand-symbol"
       src="/brand/smart-vision.png"
       alt=""
-      width={48}
-      height={48}
+      width={68}
+      height={68}
       priority
       unoptimized
     />

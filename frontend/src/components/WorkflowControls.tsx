@@ -485,8 +485,9 @@ export default function WorkflowControls({
               <button
                 type="button"
                 className="text-button wide"
-                disabled={pending || !state.calibration?.has_calib}
+                disabled={pending || !state.frame}
                 onClick={onClear}
+                title={!state.frame ? "请先选择点云帧" : "清除当前帧保存的标定，需再次确认"}
               >
                 清除标定
               </button>
