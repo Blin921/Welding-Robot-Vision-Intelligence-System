@@ -28,10 +28,10 @@ export default function Overview({
   const cloud = useMemo(() => parseView(demoCloud()), []),
     seams = useMemo(() => demoSeams(), []);
   return (
-    <main className="overview">
+    <main className="overview home-overview">
       <section className="hero">
         <div className="hero-copy">
-          <div className="hero-rule" />
+          <div className="home-eyebrow"><span className="hero-rule" />机器人视觉工作台</div>
           <h1>
             看见每一道焊缝，
             <br />
@@ -74,41 +74,43 @@ export default function Overview({
         {[
           {
             title: "数据采集与管理",
-            desc: "采集点云 · 管理数据 · 质量检查",
+            desc: "点云采集 · 数据管理",
             icon: Database,
             tab: 1,
           },
           {
             title: "AI焊缝识别",
-            desc: "智能识别 · 分类标注 · 结果可视化",
+            desc: "智能识别 · 分类标注",
             icon: ScanLine,
             tab: 2,
           },
           {
             title: "坐标标定",
-            desc: "建立坐标系 · 精准定位 · 统一空间",
+            desc: "点对匹配 · 坐标对齐",
             icon: Crosshair,
             tab: 3,
           },
           {
             title: "程序生成与轨迹预演",
-            desc: "自动规划 · 轨迹仿真 · 预览验证",
+            desc: "路径规划 · 焊接仿真",
             icon: Workflow,
             tab: 5,
           },
           {
             title: "机器人程序下发",
-            desc: "一键下发 · 文件传输 · 状态反馈",
+            desc: "程序传输 · 状态反馈",
             icon: Send,
             tab: 6,
           },
         ].map((card, i) => (
           <button
             className="workflow-card"
+            aria-label={`打开${card.title}`}
             key={card.title}
             onClick={() => onNavigate(card.tab)}
           >
             <div className="feature-heading">
+              <span className="home-feature-index" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
               <card.icon />
               <h2>{card.title}</h2>
               <span>
@@ -138,13 +140,7 @@ export default function Overview({
                   </span>
                 </div>
               )}
-              {i === 4 && (
-                <div className="feature-transfer-states">
-                  <span>✓ 已下发</span>
-                  <span>✓ 传输完成</span>
-                  <span>✓ 已确认</span>
-                </div>
-              )}
+
             </div>
           </button>
         ))}
